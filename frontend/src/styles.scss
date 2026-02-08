@@ -1,0 +1,25 @@
+@use '@angular/material' as mat;
+
+// Initialize the Material 3 theme with the Azure palette
+html {
+  @include mat.theme((
+    color: (
+      primary: mat.$azure-palette,
+      tertiary: mat.$blue-palette,
+    ),
+    typography: Roboto,
+    density: 0,
+  ));
+}
+
+// Ensure the app fills the screen
+html, body { 
+  height: 100%; 
+  margin: 0; 
+}
+
+body { 
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+  background-color: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+}
