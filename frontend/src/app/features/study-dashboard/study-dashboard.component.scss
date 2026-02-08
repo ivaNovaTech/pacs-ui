@@ -1,0 +1,44 @@
+.dashboard-container {
+  padding: 20px;
+  background-color: #f5f5f5;
+  min-height: calc(100vh - 64px);
+}
+
+.worklist-card {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.study-row:hover {
+  background-color: #f0f7ff;
+  cursor: pointer;
+}
+
+.modality-chip {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background-color: #e0e0e0;
+  
+  &[data-modality="CT"] { background-color: #bbdefb; color: #0d47a1; }
+  &[data-modality="MR"] { background-color: #e1bee7; color: #4a148c; }
+  &[data-modality="DX"], &[data-modality="XR"] { background-color: #c8e6c9; color: #1b5e20; }
+}
+
+.uid-text {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.date-main { font-weight: 500; }
+.date-sub { font-size: 0.7rem; color: #888; }
+.bold-text { font-weight: 500; color: #333; }
+
+.empty-state {
+  padding: 40px;
+  text-align: center;
+  color: #999;
+  mat-icon { font-size: 48px; width: 48px; height: 48px; }
+}

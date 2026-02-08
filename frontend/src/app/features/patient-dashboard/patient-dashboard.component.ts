@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
+import { RouterModule } from '@angular/router'; // Added this
 import { MatTableModule } from '@angular/material/table';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatCardModule } from '@angular/material/card';
@@ -14,6 +15,7 @@ import { Patient } from '../../core/models/patient.model';
   imports: [
     CommonModule, 
     MatTableModule, 
+    RouterModule,
     MatToolbarModule, 
     MatCardModule,
     MatButtonModule,

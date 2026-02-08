@@ -1,20 +1,26 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { PatientDashboardComponent } from './patient-dashboard.component';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { provideRouter } from '@angular/router';
 
-import { PatientDashboard } from './patient-dashboard';
-
-describe('PatientDashboard', () => {
-  let component: PatientDashboard;
-  let fixture: ComponentFixture<PatientDashboard>;
+describe('PatientDashboardComponent', () => {
+  let component: PatientDashboardComponent;
+  let fixture: ComponentFixture<PatientDashboardComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [PatientDashboard]
-    })
-    .compileComponents();
+      imports: [
+        PatientDashboardComponent, 
+        NoopAnimationsModule
+      ],
+      providers: [
+        provideRouter([]) // Provides routing context for any links in the dashboard
+      ]
+    }).compileComponents();
 
-    fixture = TestBed.createComponent(PatientDashboard);
+    fixture = TestBed.createComponent(PatientDashboardComponent);
     component = fixture.componentInstance;
-    await fixture.whenStable();
+    fixture.detectChanges();
   });
 
   it('should create', () => {

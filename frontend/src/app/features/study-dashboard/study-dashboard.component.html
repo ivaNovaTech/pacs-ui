@@ -1,0 +1,67 @@
+<mat-toolbar color="primary" class="mat-elevation-z4">
+  <button mat-icon-button routerLink="/patients" matTooltip="Back to Patient List">
+    <mat-icon>arrow_back</mat-icon>
+  </button>
+  <span class="toolbar-title">Patient Imaging History: {{ mrn }}</span>
+</mat-toolbar>
+
+<div class="dashboard-container">
+  <mat-card class="worklist-card">
+    <mat-table [dataSource]="studies" class="mat-elevation-z0">
+      
+      <ng-container matColumnDef="study_id">
+        <mat-header-cell *matHeaderCellDef> ID </mat-header-cell>
+        <mat-cell *matCellDef="let s"> {{ s.study_id }} </mat-cell>
+      </ng-container>
+
+      <ng-container matColumnDef="study_date">
+        <mat-header-cell *matHeaderCellDef> Study Date </mat-header-cell>
+        <mat-cell *matCellDef="let s"> 
+          <div>
+            <div class="date-main">{{ s.study_date | date:'MM/dd/yyyy' }}</div>
+            <div class="date-sub">{{ s.study_year }}</div>
+          </div>
+        </mat-cell>
+      </ng-container>
+
+      <ng-container matColumnDef="modality">
+        <mat-header-cell *matHeaderCellDef> Modality </mat-header-cell>
+        <mat-cell *matCellDef="let s"> 
+          <span class="modality-chip" [attr.data-modality]="s.modality">
+            {{ s.modality }}
+          </span> 
+        </mat-cell>
+      </ng-container>
+
+      <ng-container matColumnDef="description">
+        <mat-header-cell *matHeaderCellDef> Description </mat-header-cell>
+        <mat-cell *matCellDef="let s" class="bold-text"> {{ s.description }} </mat-cell>
+      </ng-container>
+
+      <ng-container matColumnDef="study_uid">
+        <mat-header-cell *matHeaderCellDef> Study Instance UID </mat-header-cell>
+        <mat-cell *matCellDef="let s"> 
+          <span class="uid-text">{{ s.study_uid }}</span> 
+        </mat-cell>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <mat-header-cell *matHeaderCellDef></mat-header-cell>
+        <mat-cell *matCellDef="let s">
+          <button mat-flat-button color="accent" [routerLink]="['/studies', s.study_uid, 'series']">
+            <mat-icon>visibility</mat-icon>
+            View Series
+          </button>
+        </mat-cell>
+      </ng-container>
+
+      <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+      <mat-row *matRowDef="let row; columns: displayedColumns;" class="study-row"></mat-row>
+    </mat-table>
+
+    <div *ngIf="studies.length === 0" class="empty-state">
+      <mat-icon>search_off</mat-icon>
+      <p>No imaging studies found for this MRN.</p>
+    </div>
+  </mat-card>
+</div>
