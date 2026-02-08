@@ -44,14 +44,14 @@ def create_user(user: UserCreate, db: Session = Depends(get_db), current_user: U
 
 # --- GET: list all users ---
 @router.get("/", response_model=list[UserOut])
-def list_users_all(db: Session = Depends(get_db)):
+def list_users_all(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     users = db.query(User).all()
     return [UserOut.model_validate(u).model_dump() for u in users]
     
 
 # --- GET: fetch one user ---
-@router.get("/{id}", response_model=UserOut)
-def list_users_1(id: int, db: Session = Depends(get_db)):
+@router.get("/{id}", response_model=UserOut) 
+def list_users_1(id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     user = db.query(User).filter(User.id == id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -60,7 +60,7 @@ def list_users_1(id: int, db: Session = Depends(get_db)):
 
 # --- PUT: update user by ID ---
 @router.put("/{id}", response_model=UserOut)
-def update_user(id: int, user_update: UserCreate, db: Session = Depends(get_db)):
+def update_user(id: int, user_update: UserCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     user = db.query(User).filter(User.id == id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -84,7 +84,7 @@ def update_user(id: int, user_update: UserCreate, db: Session = Depends(get_db))
 
 # --- PATCH: update User by ID (optional/select columns) ---
 @router.patch("/{id}", response_model=UserOut)
-def patch_user(id: int, user_update: UserUpdate, db: Session = Depends(get_db)):
+def patch_user(id: int, user_update: UserUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     user = db.query(User).filter(User.id == id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -106,7 +106,7 @@ def patch_user(id: int, user_update: UserUpdate, db: Session = Depends(get_db)):
 
 # --- DELETE: remove a user ---
 @router.delete("/{id}", response_model=dict)
-def delete_user(id: int, db: Session = Depends(get_db)):
+def delete_user(id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     user = db.query(User).filter(User.id == id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")

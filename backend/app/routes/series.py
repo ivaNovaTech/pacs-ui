@@ -64,7 +64,7 @@ def list_series_50_offest(limit: int = 100, offset: int = 0, db: Session = Depen
 
 # --- PUT: update Series by ID (all columns) ---
 @router.put("/{id}", response_model=SeriesOut)
-def update_series(id: int, series_update: SeriesCreate, db: Session = Depends(get_db)), current_user: User = Depends(get_current_user):
+def update_series(id: int, series_update: SeriesCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     series = db.query(Series).filter(Series.id == id).first()
     if not series:
         raise HTTPException(status_code=404, detail="Series not found")

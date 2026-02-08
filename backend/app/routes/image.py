@@ -53,7 +53,7 @@ def list_images_1(id: int, db: Session = Depends(get_db), current_user: User = D
 
 # --- GET: list all images - with pagination and offset ---
 @router.get("/", response_model=list[ImageOut])
-def list_images_50_offest(limit: int = 100, offset: int = 0, db: Session = Depends(get_db)):
+def list_images_50_offest(limit: int = 100, offset: int = 0, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     images = (
         db.query(Image)
         .order_by(Image.id.asc())
