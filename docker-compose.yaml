@@ -1,0 +1,18 @@
+services:
+  backend:
+    build: ./backend
+    container_name: pacs_backend
+    environment:
+      # This variable name must match what your FastAPI code looks for
+      DATABASE_URL: ${DATABASE_URL_LOCAL} 
+    ports:
+      - "8000:8000"
+    # This helps the container resolve the host's network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  frontend:
+    build: ./frontend
+    container_name: pacs_frontend
+    ports:
+      - "80:80"

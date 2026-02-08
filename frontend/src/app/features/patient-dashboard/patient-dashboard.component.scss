@@ -1,0 +1,46 @@
+.hl7-text {
+  font-family: 'Roboto Mono', 'Courier New', monospace;
+  font-size: 14px;
+  color: #2c3e50;
+}
+
+.patient-row {
+  transition: background-color 0.15s ease;
+  &:hover {
+    background-color: #f0f7ff !important;
+    cursor: pointer;
+  }
+}
+
+// Make the header blue and bold
+.mat-mdc-header-cell {
+  background-color: #f8f9fa;
+  color: #1976d2;
+  font-weight: 600;
+}
+
+
+
+.mat-column-dob {
+  letter-spacing: 1px;
+}
+
+
+.mat-column-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-right: 16px !important;
+}
+
+button[mat-flat-button] {
+  line-height: 32px;
+  height: 32px;
+  font-size: 12px;
+  
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    margin-right: 4px;
+  }
+}

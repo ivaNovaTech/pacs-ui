@@ -1,0 +1,31 @@
+.dashboard-container {
+  padding: 24px;
+  background-color: #fafafa;
+  min-height: calc(100vh - 64px);
+}
+
+.series-num-circle {
+  background: #eee;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.8rem;
+}
+
+.desc-text { font-weight: 500; color: #2c3e50; }
+.body-part-sub { 
+  font-size: 0.7rem; 
+  color: #7f8c8d; 
+  text-transform: uppercase; 
+  letter-spacing: 0.5px;
+}
+
+.uid-cell {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 0.7rem;
+  color: #95a5a6;
+}

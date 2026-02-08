@@ -1,0 +1,48 @@
+<mat-toolbar color="primary">
+  <button mat-icon-button (click)="goBack()">
+    <mat-icon>arrow_back</mat-icon>
+  </button>
+  <span>Image Records: {{ seriesUid | slice:0:25 }}...</span>
+</mat-toolbar>
+
+<div class="dashboard-container" style="padding: 20px;">
+  <mat-card>
+    <mat-table [dataSource]="imageRecords" class="mat-elevation-z8">
+
+      <ng-container matColumnDef="instance_number">
+        <mat-header-cell *matHeaderCellDef> Instance # </mat-header-cell>
+        <mat-cell *matCellDef="let img"> {{ img.instance_number }} </mat-cell>
+      </ng-container>
+
+      <ng-container matColumnDef="sop_instance_uid">
+        <mat-header-cell *matHeaderCellDef> SOP Instance UID </mat-header-cell>
+        <mat-cell *matCellDef="let img" style="font-family: monospace; font-size: 12px;"> 
+          {{ img.sop_instance_uid }} 
+        </mat-cell>
+      </ng-container>
+
+      <ng-container matColumnDef="content_date">
+        <mat-header-cell *matHeaderCellDef> Date </mat-header-cell>
+        <mat-cell *matCellDef="let img"> {{ img.content_date }} </mat-cell>
+      </ng-container>
+
+      <ng-container matColumnDef="content_time">
+        <mat-header-cell *matHeaderCellDef> Time </mat-header-cell>
+        <mat-cell *matCellDef="let img"> {{ img.content_time }} </mat-cell>
+      </ng-container>
+
+      <ng-container matColumnDef="rows">
+        <mat-header-cell *matHeaderCellDef> Rows </mat-header-cell>
+        <mat-cell *matCellDef="let img"> {{ img.rows }} </mat-cell>
+      </ng-container>
+
+      <ng-container matColumnDef="columns">
+        <mat-header-cell *matHeaderCellDef> Columns </mat-header-cell>
+        <mat-cell *matCellDef="let img"> {{ img.columns }} </mat-cell>
+      </ng-container>
+
+      <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+      <mat-row *matRowDef="let row; columns: displayedColumns;"></mat-row>
+    </mat-table>
+  </mat-card>
+</div>
