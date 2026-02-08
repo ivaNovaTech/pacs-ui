@@ -1,0 +1,9 @@
+# Ignore environment variable files, which often contain sensitive information
+.env
+.env.*
+
+# Ignore all files ending with .log in any directory
+*.log
+
+#ignore notes
+*_notes.txt
