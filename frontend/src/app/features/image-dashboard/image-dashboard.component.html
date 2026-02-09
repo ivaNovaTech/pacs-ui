@@ -2,47 +2,61 @@
   <button mat-icon-button (click)="goBack()">
     <mat-icon>arrow_back</mat-icon>
   </button>
-  <span>Image Records: {{ seriesUid | slice:0:25 }}...</span>
+  <span>Image Metadata for Series ID: {{ seriesId }}</span>
 </mat-toolbar>
 
-<div class="dashboard-container" style="padding: 20px;">
+<div class="container" style="padding: 20px;">
   <mat-card>
-    <mat-table [dataSource]="imageRecords" class="mat-elevation-z8">
+    <mat-card-content>
+      <table mat-table [dataSource]="images" class="mat-elevation-z8" style="width: 100%;">
 
-      <ng-container matColumnDef="instance_number">
-        <mat-header-cell *matHeaderCellDef> Instance # </mat-header-cell>
-        <mat-cell *matCellDef="let img"> {{ img.instance_number }} </mat-cell>
-      </ng-container>
+        <ng-container matColumnDef="instance_number">
+          <th mat-header-cell *matHeaderCellDef> Instance # </th>
+          <td mat-cell *matCellDef="let img"> {{img.instance_number}} </td>
+        </ng-container>
 
-      <ng-container matColumnDef="sop_instance_uid">
-        <mat-header-cell *matHeaderCellDef> SOP Instance UID </mat-header-cell>
-        <mat-cell *matCellDef="let img" style="font-family: monospace; font-size: 12px;"> 
-          {{ img.sop_instance_uid }} 
-        </mat-cell>
-      </ng-container>
+        <ng-container matColumnDef="modality">
+          <th mat-header-cell *matHeaderCellDef> Modality </th>
+          <td mat-cell *matCellDef="let img"> {{img.modality}} </td>
+        </ng-container>
 
-      <ng-container matColumnDef="content_date">
-        <mat-header-cell *matHeaderCellDef> Date </mat-header-cell>
-        <mat-cell *matCellDef="let img"> {{ img.content_date }} </mat-cell>
-      </ng-container>
+        <ng-container matColumnDef="rows">
+          <th mat-header-cell *matHeaderCellDef> Rows </th>
+          <td mat-cell *matCellDef="let img"> {{img.rows}} </td>
+        </ng-container>
 
-      <ng-container matColumnDef="content_time">
-        <mat-header-cell *matHeaderCellDef> Time </mat-header-cell>
-        <mat-cell *matCellDef="let img"> {{ img.content_time }} </mat-cell>
-      </ng-container>
+        <ng-container matColumnDef="columns">
+          <th mat-header-cell *matHeaderCellDef> Cols </th>
+          <td mat-cell *matCellDef="let img"> {{img.columns}} </td>
+        </ng-container>
 
-      <ng-container matColumnDef="rows">
-        <mat-header-cell *matHeaderCellDef> Rows </mat-header-cell>
-        <mat-cell *matCellDef="let img"> {{ img.rows }} </mat-cell>
-      </ng-container>
+        <ng-container matColumnDef="image_position">
+          <th mat-header-cell *matHeaderCellDef> Position </th>
+          <td mat-cell *matCellDef="let img"> {{img.image_position}} </td>
+        </ng-container>
 
-      <ng-container matColumnDef="columns">
-        <mat-header-cell *matHeaderCellDef> Columns </mat-header-cell>
-        <mat-cell *matCellDef="let img"> {{ img.columns }} </mat-cell>
-      </ng-container>
+        <ng-container matColumnDef="image_uid">
+          <th mat-header-cell *matHeaderCellDef> Image UID </th>
+          <td mat-cell *matCellDef="let img"> {{img.image_uid}} </td>
+        </ng-container>
 
-      <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
-      <mat-row *matRowDef="let row; columns: displayedColumns;"></mat-row>
-    </mat-table>
+        <ng-container matColumnDef="transfer_syntax_uid">
+          <th mat-header-cell *matHeaderCellDef> Syntax UID </th>
+          <td mat-cell *matCellDef="let img"> {{img.transfer_syntax_uid}} </td>
+        </ng-container>
+
+        <ng-container matColumnDef="study_year">
+          <th mat-header-cell *matHeaderCellDef> Year </th>
+          <td mat-cell *matCellDef="let img"> {{img.study_year}} </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+
+      <div *ngIf="images.length === 0" style="text-align: center; padding: 40px;">
+        <p>No image metadata records found for this series.</p>
+      </div>
+    </mat-card-content>
   </mat-card>
 </div>
