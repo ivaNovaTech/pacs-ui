@@ -1,4 +1,5 @@
 export interface Study {
+  id?: number; // Optional if not yet assigned by DB
   study_id: number;
   patient_id: number;
   study_uid: string;

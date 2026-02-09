@@ -1,57 +1,57 @@
-<mat-toolbar color="accent" class="mat-elevation-z4">
-  <button mat-icon-button (click)="goBack()" matTooltip="Back to Studies">
+<mat-toolbar color="warn">
+  <button mat-icon-button (click)="goBack()">
     <mat-icon>arrow_back</mat-icon>
   </button>
-  <span>Series List for Study: {{ studyUid | slice:0:20 }}...</span>
+  <span>Series for Study ID: {{ studyId }}</span>
 </mat-toolbar>
 
-<div class="dashboard-container">
-  <mat-card class="series-card">
-    <mat-table [dataSource]="seriesList" class="mat-elevation-z0">
+<div class="container" style="padding: 20px;">
+  <mat-card>
+    <mat-card-content>
+      <table mat-table [dataSource]="seriesList" class="mat-elevation-z8" style="width: 100%;">
 
-      <ng-container matColumnDef="series_number">
-        <mat-header-cell *matHeaderCellDef> # </mat-header-cell>
-        <mat-cell *matCellDef="let s"> 
-          <span class="series-num-circle">{{ s.series_number }}</span>
-        </mat-cell>
-      </ng-container>
+        <ng-container matColumnDef="series_number">
+          <th mat-header-cell *matHeaderCellDef> Series # </th>
+          <td mat-cell *matCellDef="let series"> {{series.series_number}} </td>
+        </ng-container>
 
-      <ng-container matColumnDef="description">
-        <mat-header-cell *matHeaderCellDef> Description </mat-header-cell>
-        <mat-cell *matCellDef="let s"> 
-          <div>
-            <div class="desc-text">{{ s.description }}</div>
-            <div class="body-part-sub">{{ s.body_part_examined }}</div>
-          </div>
-        </mat-cell>
-      </ng-container>
+        <ng-container matColumnDef="modality">
+          <th mat-header-cell *matHeaderCellDef> Modality </th>
+          <td mat-cell *matCellDef="let series"> {{series.modality}} </td>
+        </ng-container>
 
-      <ng-container matColumnDef="modality">
-        <mat-header-cell *matHeaderCellDef> Modality </mat-header-cell>
-        <mat-cell *matCellDef="let s"> {{ s.modality }} </mat-cell>
-      </ng-container>
+        <ng-container matColumnDef="body_part_examined">
+          <th mat-header-cell *matHeaderCellDef> Body Part </th>
+          <td mat-cell *matCellDef="let series"> {{series.body_part_examined}} </td>
+        </ng-container>
 
-      <ng-container matColumnDef="study_year">
-        <mat-header-cell *matHeaderCellDef> Year </mat-header-cell>
-        <mat-cell *matCellDef="let s"> {{ s.study_year }} </mat-cell>
-      </ng-container>
+        <ng-container matColumnDef="description">
+          <th mat-header-cell *matHeaderCellDef> Description </th>
+          <td mat-cell *matCellDef="let series"> {{series.description}} </td>
+        </ng-container>
 
-      <ng-container matColumnDef="series_uid">
-        <mat-header-cell *matHeaderCellDef> Series UID </mat-header-cell>
-        <mat-cell *matCellDef="let s" class="uid-cell"> {{ s.series_uid }} </mat-cell>
-      </ng-container>
+        <ng-container matColumnDef="study_year">
+          <th mat-header-cell *matHeaderCellDef> Year </th>
+          <td mat-cell *matCellDef="let series"> {{series.study_year}} </td>
+        </ng-container>
 
-      <ng-container matColumnDef="actions">
-        <mat-header-cell *matHeaderCellDef></mat-header-cell>
-        <mat-cell *matCellDef="let s">
-          <button mat-stroked-button color="primary" [routerLink]="['/series', s.series_uid, 'images']">
-            View Images
-          </button>
-        </mat-cell>
-      </ng-container>
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef> Actions </th>
+          <td mat-cell *matCellDef="let series">
+            <button mat-raised-button color="accent" [routerLink]="['/series', series.id, 'images']">
+              <mat-icon>image</mat-icon>
+              Images
+            </button>
+          </td>
+        </ng-container>
 
-      <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
-      <mat-row *matRowDef="let row; columns: displayedColumns;"></mat-row>
-    </mat-table>
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+
+      <div *ngIf="seriesList.length === 0" style="text-align: center; padding: 40px;">
+        <p>No series found for this study.</p>
+      </div>
+    </mat-card-content>
   </mat-card>
 </div>

@@ -1,59 +1,67 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule, Location } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
+import { CommonModule, Location } from '@angular/common';
+import { DicomDataService } from '../../core/services/dicom-data.service';
+
+// Material Imports
 import { MatTableModule } from '@angular/material/table';
 import { MatToolbarModule } from '@angular/material/toolbar';
-import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 
 @Component({
   selector: 'app-image-dashboard',
   standalone: true,
   imports: [
-    CommonModule,
-    RouterModule,
-    MatTableModule,
-    MatToolbarModule,
+    CommonModule, 
+    RouterModule, 
+    MatTableModule, 
+    MatToolbarModule, 
+    MatIconModule, 
     MatButtonModule,
-    MatIconModule,
     MatCardModule
   ],
-  templateUrl: './image-dashboard.component.html',
-  styleUrls: ['./image-dashboard.component.scss']
+  templateUrl: './image-dashboard.component.html'
 })
 export class ImageDashboardComponent implements OnInit {
-  seriesUid: string = '';
-  imageRecords: any[] = [];
-  displayedColumns: string[] = ['instance_number', 'sop_instance_uid', 'content_date', 'content_time', 'rows', 'columns'];
+  images: any[] = [];
+  seriesId: string | null = null;
 
-  constructor(private route: ActivatedRoute, private location: Location) {}
+  // Define all fields to be displayed in the table
+  displayedColumns: string[] = [
+    'instance_number',
+    'modality',
+    'rows',
+    'columns',
+    'image_position',
+    'image_uid',
+    'transfer_syntax_uid',
+    'study_year'
+  ];
+
+  constructor(
+    private route: ActivatedRoute,
+    private dataService: DicomDataService,
+    private location: Location
+  ) {}
 
   ngOnInit(): void {
-    this.seriesUid = this.route.snapshot.paramMap.get('seriesUid') || 'Unknown';
-    this.loadMockImageRecords();
+    this.seriesId = this.route.snapshot.paramMap.get('seriesId');
+    if (this.seriesId) {
+      this.loadImages(this.seriesId);
+    }
   }
 
-  loadMockImageRecords(): void {
-    // These represent the database records for individual DICOM instances
-    this.imageRecords = [
-      { 
-        instance_number: 1, 
-        sop_instance_uid: '1.2.840.113619.2.1.1', 
-        content_date: '2026-02-08', 
-        content_time: '10:30:01', 
-        rows: 512, 
-        columns: 512 
+  loadImages(id: string): void {
+    this.dataService.getImagesBySeriesId(id).subscribe({
+      next: (data) => {
+        this.images = data;
       },
-      { 
-        instance_number: 2, 
-        sop_instance_uid: '1.2.840.113619.2.1.2', 
-        content_date: '2026-02-08', 
-        content_time: '10:30:02', 
-        rows: 512, 
-        columns: 512 
+      error: (err) => {
+        console.error('Error fetching images:', err);
       }
-    ];
+    });
   }
 
   goBack(): void {

@@ -6,8 +6,20 @@ import { ImageDashboardComponent } from './features/image-dashboard/image-dashbo
 
 export const routes: Routes = [
   { path: '', redirectTo: '/patients', pathMatch: 'full' },
-  { path: 'patients', component: PatientDashboardComponent },
-  { path: 'patients/:mrn/studies', component: StudyDashboardComponent },
-  { path: 'studies/:studyUid/series', component: SeriesDashboardComponent },
-  { path: 'series/:seriesUid/images', component: ImageDashboardComponent }, // This matches your [routerLink]
+  { 
+    path: 'patients', 
+    component: PatientDashboardComponent 
+  },
+  { 
+    path: 'patients/:patientId/studies', 
+    component: StudyDashboardComponent 
+  },
+  { 
+    path: 'studies/:studyId/series', 
+    component: SeriesDashboardComponent 
+  },
+  { 
+    path: 'series/:seriesId/images', 
+    component: ImageDashboardComponent 
+  },
 ];

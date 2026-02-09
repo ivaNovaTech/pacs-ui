@@ -1,12 +1,12 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { DicomDataService } from '../../core/services/dicom-data.service';
 import { MatTableModule } from '@angular/material/table';
-import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
+import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
-import { Study } from '../../core/models/study.model';
 
 @Component({
   selector: 'app-study-dashboard',
@@ -15,54 +15,50 @@ import { Study } from '../../core/models/study.model';
     CommonModule, 
     RouterModule, 
     MatTableModule, 
-    MatToolbarModule, 
     MatButtonModule, 
-    MatIconModule,
+    MatToolbarModule, 
+    MatIconModule, 
     MatCardModule
   ],
-  templateUrl: './study-dashboard.component.html',
-  styleUrls: ['./study-dashboard.component.scss']
+  templateUrl: './study-dashboard.component.html'
 })
 export class StudyDashboardComponent implements OnInit {
-  mrn: string | null = '';
-  studies: Study[] = [];
+  studies: any[] = [];
+  patientId: string | null = null;
   
+  // Columns matching your Study model: study_id, modality, study_date, etc.
   displayedColumns: string[] = [
     'study_id', 
-    'study_date', 
+    'study_uid', 
     'modality', 
     'description', 
-    'study_uid', 
+    'study_date', 
     'actions'
   ];
 
-  constructor(private route: ActivatedRoute) {}
+  constructor(
+    private route: ActivatedRoute,
+    private dataService: DicomDataService
+  ) {}
 
   ngOnInit(): void {
-    // Capture the MRN from the URL: /patients/:mrn/studies
-    this.mrn = this.route.snapshot.paramMap.get('mrn');
-    this.loadInitialStudies();
+    // We use 'patientId' because that is the key defined in app.routes.ts
+    this.patientId = this.route.snapshot.paramMap.get('patientId');
+    
+    if (this.patientId) {
+      this.loadStudies(this.patientId);
+    }
   }
 
-  loadInitialStudies(): void {
-    // Mock data using your specific field requirements
-    this.studies = [
-      {
-        study_id: 5001,
-        patient_id: 12,
-        study_uid: '1.2.840.113619.2.1.99.44521',
-        study_date: '2026-02-08T09:15:00',
-        study_year: 2026,
-        modality: 'MR',
-        description: 'MRI BRAIN W WO CONTRAST',
-        created_at: '2026-02-08T10:00:00',
-        last_updated_at: '2026-02-08T10:00:00'
+  loadStudies(id: string): void {
+    this.dataService.getStudiesByPatientId(id).subscribe({
+      next: (data) => {
+        console.log('Studies loaded for patient:', id, data);
+        this.studies = data;
+      },
+      error: (err) => {
+        console.error('Error fetching studies:', err);
       }
-    ];
-  }
-
-  viewSeries(study: Study) {
-    console.log('Navigating to series for study:', study.study_uid);
-    // Future step: this.router.navigate(['/studies', study.study_uid, 'series']);
+    });
   }
 }

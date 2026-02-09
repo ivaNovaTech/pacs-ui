@@ -1,68 +1,42 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
-import { RouterModule } from '@angular/router'; // Added this
+import { RouterModule } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { DicomDataService } from '../../core/services/dicom-data.service';
 import { MatTableModule } from '@angular/material/table';
-import { MatToolbarModule } from '@angular/material/toolbar';
-import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
+import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatIconModule } from '@angular/material/icon';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { Patient } from '../../core/models/patient.model';
+import { MatCardModule } from '@angular/material/card';
 
 @Component({
   selector: 'app-patient-dashboard',
   standalone: true,
   imports: [
     CommonModule, 
+    RouterModule, 
     MatTableModule, 
-    RouterModule,
+    MatButtonModule, 
     MatToolbarModule, 
-    MatCardModule,
-    MatButtonModule,
-    MatIconModule,
-    MatTooltipModule
+    MatIconModule, 
+    MatCardModule
   ],
-  templateUrl: './patient-dashboard.component.html',
-  styleUrls: ['./patient-dashboard.component.scss'],
-  providers: [DatePipe]
+  templateUrl: './patient-dashboard.component.html'
 })
 export class PatientDashboardComponent implements OnInit {
-  patients: Patient[] = [
-    { 
-      mrn: 'MRN-7721', 
-      last_name: 'DOE',
-      first_name: 'JOHN', 
-      middle_name: 'QUINCY',
-      prefix: 'MR',
-      suffix: 'JR',
-      sex: 'M', 
-      date_of_birth: '1985-05-20T00:00:00'
-    },
-    { 
-      mrn: 'MRN-8832', 
-      last_name: 'SMITH',
-      first_name: 'JANE', 
-      middle_name: 'ALICE',
-      prefix: 'DR',
-      suffix: '',
-      sex: 'F', 
-      date_of_birth: '1992-11-03T00:00:00'
-    }
-  ];
+  patients: any[] = [];
+  
+  // FIXED: These strings MUST match the keys in your console log and the matColumnDef in HTML
+  displayedColumns: string[] = ['id', 'mrn', 'last_name', 'first_name', 'date_of_birth', 'actions'];
 
-  // Added 'actions' here
-  displayedColumns: string[] = ['mrn', 'hl7_name', 'sex', 'dob', 'actions'];
+  constructor(private dataService: DicomDataService) {}
 
-  constructor() {}
-
-  ngOnInit(): void {}
-
-  formatHl7Name(p: Patient): string {
-    return `${p.last_name}^${p.first_name}^${p.middle_name}^${p.prefix}^${p.suffix}`;
-  }
-
-  viewStudies(patient: Patient) {
-    console.log(`Navigating to studies for MRN: ${patient.mrn}`);
-    // Logic for router navigation or opening a viewer goes here
+  ngOnInit(): void {
+    this.dataService.getPatients().subscribe({
+      next: (data) => {
+        console.log('Patients assigned to table:', data);
+        this.patients = data;
+      },
+      error: (err) => console.error('Error fetching patients', err)
+    });
   }
 }

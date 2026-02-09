@@ -1,4 +1,5 @@
 export interface Series {
+  id?: number; // Optional if not yet assigned by DB
   series_id?: number; // Optional if not yet assigned by DB
   study_id: number;
   series_uid: string;
