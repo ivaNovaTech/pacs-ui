@@ -6,3 +6,4 @@ bcrypt>=5.0.0
 python-jose
 python-multipart
 pydantic[email]
+email-validator

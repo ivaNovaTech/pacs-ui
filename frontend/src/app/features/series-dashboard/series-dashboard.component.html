@@ -1,57 +1,35 @@
-<mat-toolbar color="warn">
-  <button mat-icon-button (click)="goBack()">
-    <mat-icon>arrow_back</mat-icon>
-  </button>
-  <span>Series for Study ID: {{ studyId }}</span>
-</mat-toolbar>
+<div class="dashboard-container">
+  <header>
+    <h2>Series List</h2>
+    <p>Study ID: {{ studyId }} | Patient ID: {{ patientId }}</p>
+  </header>
 
-<div class="container" style="padding: 20px;">
-  <mat-card>
-    <mat-card-content>
-      <table mat-table [dataSource]="seriesList" class="mat-elevation-z8" style="width: 100%;">
-
-        <ng-container matColumnDef="series_number">
-          <th mat-header-cell *matHeaderCellDef> Series # </th>
-          <td mat-cell *matCellDef="let series"> {{series.series_number}} </td>
-        </ng-container>
-
-        <ng-container matColumnDef="modality">
-          <th mat-header-cell *matHeaderCellDef> Modality </th>
-          <td mat-cell *matCellDef="let series"> {{series.modality}} </td>
-        </ng-container>
-
-        <ng-container matColumnDef="body_part_examined">
-          <th mat-header-cell *matHeaderCellDef> Body Part </th>
-          <td mat-cell *matCellDef="let series"> {{series.body_part_examined}} </td>
-        </ng-container>
-
-        <ng-container matColumnDef="description">
-          <th mat-header-cell *matHeaderCellDef> Description </th>
-          <td mat-cell *matCellDef="let series"> {{series.description}} </td>
-        </ng-container>
-
-        <ng-container matColumnDef="study_year">
-          <th mat-header-cell *matHeaderCellDef> Year </th>
-          <td mat-cell *matCellDef="let series"> {{series.study_year}} </td>
-        </ng-container>
-
-        <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef> Actions </th>
-          <td mat-cell *matCellDef="let series">
-            <button mat-raised-button color="accent" [routerLink]="['/series', series.id, 'images']">
-              <mat-icon>image</mat-icon>
-              Images
-            </button>
-          </td>
-        </ng-container>
-
-        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-      </table>
-
-      <div *ngIf="seriesList.length === 0" style="text-align: center; padding: 40px;">
-        <p>No series found for this study.</p>
-      </div>
-    </mat-card-content>
-  </mat-card>
+  <table class="pacs-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Modality</th>
+        <th>Description</th>
+        <th>Body Part</th>
+        <th>Instances (Images)</th>
+        <th>Series Instance UID</th>
+        <th>Created</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let series of seriesList">
+        <td>{{ series.series_number }}</td>
+        <td><span class="modality-tag">{{ series.modality }}</span></td>
+        <td>{{ series.description || 'No Description' }}</td>
+        <td>{{ series.body_part || 'N/A' }}</td>
+        <td><strong>{{ series.instance_count }}</strong></td>
+        <td><code class="uid">{{ series.series_instance_uid }}</code></td>
+        <td>{{ series.created_at | date:'short' }}</td>
+        <td>
+          <button class="btn-view" (click)="viewImages(series.id)">Open Series</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
 </div>

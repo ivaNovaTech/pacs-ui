@@ -1,40 +1,31 @@
-.dashboard-container {
-  padding: 16px;
-  background-color: #000;
-  min-height: calc(100vh - 64px);
-}
-
-.dicom-frame {
-  width: 100%;
-  height: 100%;
-  background: #0a0a0a;
-  border: 1px solid #222;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  &:hover {
-    border-color: #f44336;
-    cursor: zoom-in;
+.pacs-container {
+  padding: 20px;
+  
+  .uid {
+    font-family: monospace;
+    background: #f4f4f4;
+    padding: 2px 4px;
+    font-size: 0.85rem;
   }
-}
 
-.image-placeholder {
-  color: #222;
-  mat-icon { font-size: 50px; width: 50px; height: 50px; }
-}
+  .path-text {
+    color: #666;
+    word-break: break-all; // Prevents long paths from breaking the table layout
+  }
 
-.overlay {
-  position: absolute;
-  color: #00ff00;
-  font-family: 'Courier New', monospace;
-  font-size: 0.7rem;
-  padding: 4px;
-  text-shadow: 1px 1px 2px #000;
+  .pacs-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
 
-  &.tl { top: 0; left: 0; }
-  &.tr { top: 0; right: 0; }
-  &.bl { bottom: 0; left: 0; }
-  &.br { bottom: 0; right: 0; }
+    th, td {
+      border-bottom: 1px solid #ddd;
+      padding: 12px;
+      text-align: left;
+    }
+
+    tr:hover {
+      background-color: #f9f9f9;
+    }
+  }
 }

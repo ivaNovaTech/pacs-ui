@@ -1,116 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError 
 from typing import List
-from ..db import get_db
-from ..models import Series
-from ..schemas import SeriesCreate, SeriesOut, SeriesUpdate
+from app.database import get_db
+from app.models.series import Series
+from app.schemas.series import SeriesOut
 
 router = APIRouter(prefix="/series", tags=["series"])
 
-# --- POST: create a new series ---
-@router.post("/", response_model=SeriesOut)
-def create_series(series: SeriesCreate, db: Session = Depends(get_db)):
-    new_series = Series(
-        series_id=series.series_id,
-        study_id=series.study_id,
-        series_uid=series.series_uid,
-        series_number=series.series_number,
-        modality=series.modality,
-        body_part_examined=series.body_part_examined,
-        description=series.description,
-        study_year=series.study_year
-    )
-
-    db.add(new_series)
-    try:
-        db.commit()
-        db.refresh(new_series)
-    except IntegrityError as e:
-        db.rollback()
-        if "unique" in str(e.orig).lower():
-            raise HTTPException(status_code=400, detail="Series UID already exists")
-        raise HTTPException(status_code=400, detail="Database integrity error")
-
-    return SeriesOut.model_validate(new_series).model_dump()
-
-
-# --- GET: fetch one series ---
-@router.get("/{id}", response_model=SeriesOut)
-def list_series_1(id: int, db: Session = Depends(get_db)):
-    series = db.query(Series).filter(Series.id == id).first()
-    if not series:
-        raise HTTPException(status_code=404, detail="Series not found")
-    return SeriesOut.model_validate(series).model_dump()
-
-
-# --- GET: list all series ---
 @router.get("/", response_model=List[SeriesOut])
-def list_series_all(limit: int = 100, offset: int = 0, db: Session = Depends(get_db)):
-    series = (
-        db.query(Series)
-        .order_by(Series.id.asc())
-        .offset(offset)
-        .limit(limit)
-        .all()
-    )
-    return [SeriesOut.model_validate(s).model_dump() for s in series]
+def get_all_series(db: Session = Depends(get_db)):
+    return db.query(Series).all()
 
-
-# --- PUT: update Series by ID ---
-@router.put("/{id}", response_model=SeriesOut)
-def update_series(id: int, series_update: SeriesCreate, db: Session = Depends(get_db)):
-    series = db.query(Series).filter(Series.id == id).first()
-    if not series:
-        raise HTTPException(status_code=404, detail="Series not found")
-
-    series.study_id = series_update.study_id
-    series.series_uid = series_update.series_uid
-    series.series_number = series_update.series_number
-    series.modality = series_update.modality
-    series.body_part_examined = series_update.body_part_examined
-    series.description = series_update.description
-    series.study_year = series_update.study_year
-
-    try:
-        db.commit()
-        db.refresh(series)
-        return SeriesOut.model_validate(series).model_dump()
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(status_code=409, detail="Constraint violation on update")
-
-# --- GET: fetch all series for a specific study ---
-@router.get("/by-study/{study_id}", response_model=List[SeriesOut])
-def list_series_by_study(study_id: int, db: Session = Depends(get_db)):
+@router.get("/study/{study_id}", response_model=List[SeriesOut])
+def get_series_by_study(study_id: int, db: Session = Depends(get_db)):
     series_list = db.query(Series).filter(Series.study_id == study_id).all()
-    return [SeriesOut.model_validate(s).model_dump() for s in series_list]
-
-# --- PATCH: update Series by ID (optional fields) ---
-@router.patch("/{id}", response_model=SeriesOut)
-def patch_series(id: int, series_update: SeriesUpdate, db: Session = Depends(get_db)):
-    series = db.query(Series).filter(Series.id == id).first()
-    if not series:
-        raise HTTPException(status_code=404, detail="Series not found")
-
-    for field, value in series_update.model_dump(exclude_unset=True).items():
-        setattr(series, field, value)
-
-    try:
-        db.commit()
-        db.refresh(series)
-        return SeriesOut.model_validate(series).model_dump()
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(status_code=409, detail="Database constraint violated")
-
-
-# --- DELETE: remove a Series ---
-@router.delete("/{id}", response_model=dict)
-def delete_series_by_id(id: int, db: Session = Depends(get_db)):
-    series = db.query(Series).filter(Series.id == id).first()
-    if not series:
-        raise HTTPException(status_code=404, detail="Series not found")
-    db.delete(series)
-    db.commit()
-    return {"detail": f"Series {id} deleted successfully"}
+    if not series_list:
+        raise HTTPException(status_code=404, detail="No series found for this study")
+    return series_list

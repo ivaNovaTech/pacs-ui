@@ -1,9 +1,9 @@
 export interface Study {
-  id?: number; // Optional if not yet assigned by DB
-  study_id: number;
-  patient_id: number;
-  study_uid: string;
-  study_date: string; // ISO string from API
+  id: number;
+  patient_id: number; // Links to Patient.id
+  study_id: number;   
+  study_uid: string;  // The DICOM StudyInstanceUID
+  study_date: string;
   study_year: number;
   modality: string;
   description: string;

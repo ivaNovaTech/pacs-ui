@@ -1,46 +1,35 @@
-.hl7-text {
-  font-family: 'Roboto Mono', 'Courier New', monospace;
-  font-size: 14px;
-  color: #2c3e50;
-}
+.extra-small { font-size: 0.75rem; }
+.font-monospace { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; }
 
-.patient-row {
-  transition: background-color 0.15s ease;
-  &:hover {
-    background-color: #f0f7ff !important;
-    cursor: pointer;
-  }
-}
-
-// Make the header blue and bold
-.mat-mdc-header-cell {
-  background-color: #f8f9fa;
-  color: #1976d2;
+.table thead th {
+  border-top: none;
   font-weight: 600;
+  letter-spacing: 0.5px;
 }
 
-
-
-.mat-column-dob {
-  letter-spacing: 1px;
+.btn-primary {
+  background-color: #0d6efd;
+  border: none;
+  transition: all 0.2s ease;
 }
 
-
-.mat-column-actions {
-  display: flex;
-  justify-content: flex-end;
-  padding-right: 16px !important;
+.btn-primary:hover {
+  background-color: #0b5ed7;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(13, 110, 253, 0.2);
 }
 
-button[mat-flat-button] {
-  line-height: 32px;
-  height: 32px;
-  font-size: 12px;
-  
-  mat-icon {
-    font-size: 18px;
-    width: 18px;
-    height: 18px;
-    margin-right: 4px;
-  }
+.page-link {
+  color: #0d6efd;
+  border-radius: 5px;
+  margin: 0 2px;
+}
+
+.page-item.active .page-link {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
+
+.badge {
+  font-weight: 500;
 }

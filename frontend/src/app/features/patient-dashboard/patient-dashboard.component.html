@@ -1,55 +1,92 @@
-<mat-toolbar color="primary">
-  <span>Patient Dashboard</span>
-</mat-toolbar>
-
-<div class="container" style="padding: 20px;">
-  <mat-card>
-    <mat-card-content>
-      
-      <table mat-table [dataSource]="patients" class="mat-elevation-z8" style="width: 100%;">
-
-        <ng-container matColumnDef="id">
-          <th mat-header-cell *matHeaderCellDef> ID </th>
-          <td mat-cell *matCellDef="let patient"> {{patient.id}} </td>
-        </ng-container>
-
-        <ng-container matColumnDef="mrn">
-          <th mat-header-cell *matHeaderCellDef> MRN </th>
-          <td mat-cell *matCellDef="let patient"> {{patient.mrn}} </td>
-        </ng-container>
-
-        <ng-container matColumnDef="last_name">
-          <th mat-header-cell *matHeaderCellDef> Last Name </th>
-          <td mat-cell *matCellDef="let patient"> {{patient.last_name}} </td>
-        </ng-container>
-
-        <ng-container matColumnDef="first_name">
-          <th mat-header-cell *matHeaderCellDef> First Name </th>
-          <td mat-cell *matCellDef="let patient"> {{patient.first_name}} </td>
-        </ng-container>
-
-        <ng-container matColumnDef="date_of_birth">
-          <th mat-header-cell *matHeaderCellDef> Birth Date </th>
-          <td mat-cell *matCellDef="let patient"> {{patient.date_of_birth | date:'MM/dd/yyyy'}} </td>
-        </ng-container>
-
-        <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef> Actions </th>
-          <td mat-cell *matCellDef="let patient">
-            <button mat-icon-button color="primary" [routerLink]="['/patients', patient.id, 'studies']">
-              <mat-icon>visibility</mat-icon>
-            </button>
-          </td>
-        </ng-container>
-
-        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-      </table>
-
-      <div *ngIf="patients.length === 0" style="text-align: center; padding: 20px;">
-        No patients found in database.
+<div class="container-fluid mt-4 px-4">
+  <div class="card shadow-sm border-0 rounded-3">
+    <div class="card-header bg-white border-bottom py-3">
+      <div class="row align-items-center">
+        <div class="col-md-6">
+          <h4 class="mb-0 fw-bold text-primary">Patient Directory</h4>
+          <p class="text-muted small mb-0">Manage and view medical imaging records</p>
+        </div>
+        <div class="col-md-6 mt-2 mt-md-0">
+          <div class="input-group">
+            <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
+            <input type="text" class="form-control bg-light border-start-0" 
+                   placeholder="Search by MRN or Name..." [(ngModel)]="searchTerm" (input)="onSearch()">
+          </div>
+        </div>
       </div>
+    </div>
 
-    </mat-card-content>
-  </mat-card>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light text-secondary small text-uppercase">
+            <tr>
+              <th class="ps-4">MRN</th>
+              <th>Name</th>
+              <th>Sex</th>
+              <th>DOB</th>
+              <th>Suffix</th>
+              <th>First Visit</th>
+              <th>Last Visit</th>
+              <th class="text-end pe-4">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let p of paginatedPatients">
+              <td class="ps-4"><span class="badge bg-light text-dark border font-monospace">{{ p.mrn }}</span></td>
+              <td>
+                <div class="fw-bold">{{ p.last_name }}, {{ p.first_name }}</div>
+                <div class="text-muted extra-small">{{ p.middle_name }}</div>
+              </td>
+              <td>
+                <span [ngClass]="{
+                  'badge bg-info-subtle text-info': p.sex === 'M',
+                  'badge bg-danger-subtle text-danger': p.sex === 'F',
+                  'badge bg-secondary-subtle text-secondary': p.sex === 'O' || !p.sex
+                }" class="px-2 py-1">
+                  {{ p.sex || 'N/A' }}
+                </span>
+              </td>
+              <td class="font-monospace">{{ p.date_of_birth | date:'yyyyMMdd' }}</td>
+              <td>{{ p.suffix || '-' }}</td>
+              <td class="small text-muted">{{ p.created_at | date:'yyyyMMdd HH:mm' }}</td>
+              <td class="small text-muted">{{ p.last_updated_at | date:'yyyyMMdd HH:mm' }}</td>
+              <td class="text-end pe-4">
+                <button class="btn btn-primary btn-sm rounded-pill px-3" (click)="viewStudies(p.id)">
+                  <i class="bi bi-eye-fill"></i> View Studies
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="paginatedPatients.length === 0">
+              <td colspan="8" class="text-center py-5 text-muted">
+                No patients found matching your search.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card-footer bg-white border-top py-3">
+      <div class="d-flex justify-content-between align-items-center">
+        <span class="text-muted small">
+          Showing {{ (currentPage - 1) * pageSize + 1 }} - {{ Math.min(currentPage * pageSize, filteredPatients.length) }} of {{ filteredPatients.length }}
+        </span>
+        <nav>
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item" [class.disabled]="currentPage === 1">
+              <button class="page-link" (click)="changePage(currentPage - 1)">Previous</button>
+            </li>
+            <li class="page-item" [class.active]="currentPage === i + 1" 
+                *ngFor="let page of [].constructor(totalPages); let i = index">
+              <button class="page-link" (click)="changePage(i + 1)">{{ i + 1 }}</button>
+            </li>
+            <li class="page-item" [class.disabled]="currentPage === totalPages">
+              <button class="page-link" (click)="changePage(currentPage + 1)">Next</button>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </div>
 </div>

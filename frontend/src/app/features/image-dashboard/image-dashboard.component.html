@@ -1,62 +1,41 @@
-<mat-toolbar color="primary">
-  <button mat-icon-button (click)="goBack()">
-    <mat-icon>arrow_back</mat-icon>
-  </button>
-  <span>Image Metadata for Series ID: {{ seriesId }}</span>
-</mat-toolbar>
+<div class="pacs-container">
+  <header>
+    <h2>Image Instances</h2>
+    <p>Series ID: {{ seriesId }} | Total Instances: {{ images.length }}</p>
+  </header>
 
-<div class="container" style="padding: 20px;">
-  <mat-card>
-    <mat-card-content>
-      <table mat-table [dataSource]="images" class="mat-elevation-z8" style="width: 100%;">
+  <div *ngIf="isLoading" class="loading">Fetching image metadata...</div>
+  <div *ngIf="errorMessage" class="error">{{ errorMessage }}</div>
 
-        <ng-container matColumnDef="instance_number">
-          <th mat-header-cell *matHeaderCellDef> Instance # </th>
-          <td mat-cell *matCellDef="let img"> {{img.instance_number}} </td>
-        </ng-container>
+  <table class="pacs-table" *ngIf="!isLoading && images.length > 0">
+    <thead>
+      <tr>
+        <th>Inst #</th>
+        <th>Image UID</th>
+        <th>Resolution</th>
+        <th>Modality</th>
+        <th>Transfer Syntax</th>
+        <th>Created</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let img of images">
+        <td><strong>{{ img.instance_number || '-' }}</strong></td>
+        <td><code class="uid">{{ img.image_uid }}</code></td>
+        <td>
+          <span *ngIf="img.rows && img.columns">
+            {{ img.rows }} x {{ img.columns }}
+          </span>
+          <span *ngIf="!img.rows">N/A</span>
+        </td>
+        <td>{{ img.modality || 'N/A' }}</td>
+        <td><small>{{ img.transfer_syntax_uid }}</small></td>
+        <td>{{ img.created_at | date:'short' }}</td>
+      </tr>
+    </tbody>
+  </table>
 
-        <ng-container matColumnDef="modality">
-          <th mat-header-cell *matHeaderCellDef> Modality </th>
-          <td mat-cell *matCellDef="let img"> {{img.modality}} </td>
-        </ng-container>
-
-        <ng-container matColumnDef="rows">
-          <th mat-header-cell *matHeaderCellDef> Rows </th>
-          <td mat-cell *matCellDef="let img"> {{img.rows}} </td>
-        </ng-container>
-
-        <ng-container matColumnDef="columns">
-          <th mat-header-cell *matHeaderCellDef> Cols </th>
-          <td mat-cell *matCellDef="let img"> {{img.columns}} </td>
-        </ng-container>
-
-        <ng-container matColumnDef="image_position">
-          <th mat-header-cell *matHeaderCellDef> Position </th>
-          <td mat-cell *matCellDef="let img"> {{img.image_position}} </td>
-        </ng-container>
-
-        <ng-container matColumnDef="image_uid">
-          <th mat-header-cell *matHeaderCellDef> Image UID </th>
-          <td mat-cell *matCellDef="let img"> {{img.image_uid}} </td>
-        </ng-container>
-
-        <ng-container matColumnDef="transfer_syntax_uid">
-          <th mat-header-cell *matHeaderCellDef> Syntax UID </th>
-          <td mat-cell *matCellDef="let img"> {{img.transfer_syntax_uid}} </td>
-        </ng-container>
-
-        <ng-container matColumnDef="study_year">
-          <th mat-header-cell *matHeaderCellDef> Year </th>
-          <td mat-cell *matCellDef="let img"> {{img.study_year}} </td>
-        </ng-container>
-
-        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-      </table>
-
-      <div *ngIf="images.length === 0" style="text-align: center; padding: 40px;">
-        <p>No image metadata records found for this series.</p>
-      </div>
-    </mat-card-content>
-  </mat-card>
+  <div *ngIf="!isLoading && images.length === 0 && !errorMessage" class="empty-state">
+    No image metadata records found for this series.
+  </div>
 </div>
