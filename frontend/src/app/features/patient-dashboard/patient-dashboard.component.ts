@@ -1,42 +1,75 @@
 import { Component, OnInit } from '@angular/core';
-import { RouterModule } from '@angular/router';
-import { CommonModule } from '@angular/common';
-import { DicomDataService } from '../../core/services/dicom-data.service';
-import { MatTableModule } from '@angular/material/table';
-import { MatButtonModule } from '@angular/material/button';
-import { MatToolbarModule } from '@angular/material/toolbar';
-import { MatIconModule } from '@angular/material/icon';
-import { MatCardModule } from '@angular/material/card';
+import { CommonModule } from '@angular/common'; // Fixes ngClass, ngFor, ngIf, and DatePipe
+import { FormsModule } from '@angular/forms'; // Fixes [(ngModel)]
+import { RouterModule, Router } from '@angular/router';
+import { PatientService } from '../../core/services/patient.service';
+import { Patient } from '../../core/models/patient.model';
 
 @Component({
   selector: 'app-patient-dashboard',
   standalone: true,
-  imports: [
-    CommonModule, 
-    RouterModule, 
-    MatTableModule, 
-    MatButtonModule, 
-    MatToolbarModule, 
-    MatIconModule, 
-    MatCardModule
-  ],
-  templateUrl: './patient-dashboard.component.html'
+  imports: [CommonModule, FormsModule, RouterModule],
+  templateUrl: './patient-dashboard.component.html',
+  styles: [`
+    .font-monospace { font-family: 'SFMono-Regular', Consolas, monospace; }
+    .extra-small { font-size: 0.75rem; }
+    .table-hover tbody tr:hover { background-color: rgba(13, 110, 253, 0.04); }
+    .card { box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); }
+    .page-link { cursor: pointer; }
+    .badge { font-weight: 500; }
+  `]
 })
 export class PatientDashboardComponent implements OnInit {
-  patients: any[] = [];
+  patients: Patient[] = [];
+  filteredPatients: Patient[] = [];
+  paginatedPatients: Patient[] = [];
   
-  // FIXED: These strings MUST match the keys in your console log and the matColumnDef in HTML
-  displayedColumns: string[] = ['id', 'mrn', 'last_name', 'first_name', 'date_of_birth', 'actions'];
+  // Search and Pagination
+  searchTerm: string = '';
+  currentPage: number = 1;
+  pageSize: number = 10;
+  totalPages: number = 0;
+  Math = Math; // Required for Math.min in template
 
-  constructor(private dataService: DicomDataService) {}
+  constructor(private patientService: PatientService, private router: Router) { }
 
   ngOnInit(): void {
-    this.dataService.getPatients().subscribe({
+    this.patientService.getPatients().subscribe({
       next: (data) => {
-        console.log('Patients assigned to table:', data);
         this.patients = data;
+        this.filteredPatients = data;
+        this.calculatePagination();
       },
-      error: (err) => console.error('Error fetching patients', err)
+      error: (err) => console.error('Error loading patients:', err)
     });
+  }
+
+  onSearch(): void {
+    const term = this.searchTerm.toLowerCase();
+    this.filteredPatients = this.patients.filter(p => 
+      p.mrn?.toLowerCase().includes(term) ||
+      p.last_name?.toLowerCase().includes(term) ||
+      p.first_name?.toLowerCase().includes(term)
+    );
+    this.currentPage = 1;
+    this.calculatePagination();
+  }
+
+  calculatePagination(): void {
+    this.totalPages = Math.ceil(this.filteredPatients.length / this.pageSize);
+    const startIndex = (this.currentPage - 1) * this.pageSize;
+    this.paginatedPatients = this.filteredPatients.slice(startIndex, startIndex + this.pageSize);
+  }
+
+  changePage(page: number): void {
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+      this.calculatePagination();
+    }
+  }
+
+  viewStudies(patientId: number): void {
+    // study.patient_id matches patient.id
+    this.router.navigate(['/patients', patientId, 'studies']);
   }
 }

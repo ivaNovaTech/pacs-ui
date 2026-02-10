@@ -1,24 +1,17 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
-from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
-from ..db import Base 
-
-
+from sqlalchemy import Column, Integer, Text, Date, TIMESTAMP, String
+from app.database import Base  # Updated here
 
 class Patient(Base):
     __tablename__ = "patient"
-    
+
     id = Column(Integer, primary_key=True, index=True)
-    mrn = Column(String(100), unique=True, nullable=False, index=True)
-    last_name =  Column(String(100), nullable=False)
-    first_name =  Column(String(100), nullable=False)
-    middle_name =  Column(String(100))
-    sex =  Column(String(100), nullable=False)
-    date_of_birth = Column(DateTime(timezone=False), nullable=False)
-    suffix = Column(String(100))
-    prefix = Column(String(100))
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)    
-    last_updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-
-    studies = relationship("Study", back_populates="patient")
-
+    mrn = Column(Text, unique=True, nullable=False)
+    last_name = Column(Text, nullable=False)
+    first_name = Column(Text, nullable=False)
+    middle_name = Column(Text)
+    sex = Column(String(1), nullable=False)
+    date_of_birth = Column(Date, nullable=False)
+    suffix = Column(Text)
+    prefix = Column(Text)
+    created_at = Column(TIMESTAMP)
+    last_updated_at = Column(TIMESTAMP)

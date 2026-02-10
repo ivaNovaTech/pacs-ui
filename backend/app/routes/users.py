@@ -17,7 +17,7 @@ def list_users(db: Session = Depends(get_db)):
 def get_user(id: int, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == id).first()
     if not user:
-        # This is likely where the error was:
+       
         raise HTTPException(status_code=404, detail="User not found")
     return UserOut.model_validate(user).model_dump()
 

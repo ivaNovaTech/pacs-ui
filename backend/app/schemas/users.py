@@ -18,7 +18,7 @@ class UserOut(BaseModel):
     created_at: datetime
 
     model_config = {
-        "from_attributes": True  # allows Pydantic to read SQLAlchemy attributes
+        "from_attributes": True  #allows Pydantic to read SQLAlchemy attributes
     }
 
 class UserUpdate(BaseModel):

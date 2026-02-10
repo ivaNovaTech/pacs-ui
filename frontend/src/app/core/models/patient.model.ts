@@ -1,13 +1,12 @@
 export interface Patient {
-  id: number;
-  mrn: string;
-  last_name: string;      // Match the JSON
-  first_name: string;     // Match the JSON
-  middle_name: string;    // Match the JSON
-  sex: string;
-  date_of_birth: string;  // Match the JSON
+  id: number;              // Database primary key
+  mrn: string
+  last_name: string;      
+  first_name: string;
+  middle_name?: string;
   suffix: string;
-  prefix: string;
-  created_at: string;
+  sex?: string;
+  date_of_birth?: Date;
+  created_at: string;      
   last_updated_at: string;
 }

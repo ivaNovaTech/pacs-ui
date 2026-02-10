@@ -2,23 +2,18 @@ FROM python:3.11-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential \
-        libffi-dev \
-        python3-dev \
-        gcc \
-        make \
         curl \
-        iputils-ping \
-        telnet \
-        dnsutils \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
+WORKDIR /src
 
 COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-RUN pip install --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt
+# Copy the entire backend folder into /src
+COPY . .
 
-COPY app ./app
+# Critical: This ensures 'import app' works from the /src directory
+ENV PYTHONPATH=/src
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

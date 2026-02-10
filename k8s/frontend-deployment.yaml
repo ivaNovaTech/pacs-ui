@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pacs-frontend
+  labels:
+    app: pacs-frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: pacs-frontend
+  template:
+    metadata:
+      labels:
+        app: pacs-frontend
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - pacs-frontend
+              topologyKey: "kubernetes.io/hostname"
+      containers:
+      - name: pacs-ui
+        image: us-central1-docker.pkg.dev/mwakilishi-1770258957/pacs-repo/pacs-ui:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+        env:
+        - name: REACT_APP_API_URL
+          # Since this runs in the user's browser, it must point to the PUBLIC Ingress IP/Domain
+          value: "http://<YOUR_INGRESS_IP>/api" 
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pacs-frontend-service
+spec:
+  type: ClusterIP
+  selector:
+    app: pacs-frontend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80

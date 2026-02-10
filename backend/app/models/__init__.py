@@ -1,9 +1,6 @@
-from .patient import Patient
-from .study import Study
-from .series import Series
-from .image import Image
-from .users import User
+from app.models.patient import Patient
+from app.models.study import Study
+from app.models.series import Series
+from app.models.image import Image
 
-
-# This ensures all models are registered with Base.metadata
-__all__ = ["Patient", "Study", "Series", "Image", "User"]
+__all__ = ["Patient", "Study", "Series", "Image"]
