@@ -5,8 +5,9 @@ class Study(Base):
     __tablename__ = "study"
 
     id = Column(Integer, primary_key=True, index=True)
-    study_id = Column(Integer, unique=True)
     patient_id = Column(Integer, ForeignKey("patient.id"))
+    studyid = Column(Integer, unique=True)
+    accn_num = Column(Text, nullable=False)
     study_uid = Column(Text, nullable=False)
     study_date = Column(Date, nullable=False)
     study_year = Column(Integer)

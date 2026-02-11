@@ -3,8 +3,9 @@ from datetime import date, datetime
 from typing import Optional
 
 class StudyBase(BaseModel):
-    study_id: Optional[int] = None
     patient_id: int
+    studyid: str
+    accn_num: str
     study_uid: str
     study_date: date
     study_year: Optional[int] = None

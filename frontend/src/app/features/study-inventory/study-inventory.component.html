@@ -1,0 +1,65 @@
+<div class="container-fluid mt-4 px-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-0">Global Study Inventory</h2>
+      <p class="text-muted small mb-0">
+        Records: <span class="badge bg-secondary">{{ totalCount | number }}</span>
+      </p>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-4">Study Date</th>
+              <th>Patient</th>
+              <th>Study ID</th>
+              <th>Modality</th>
+              <th class="text-end pe-4">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="isLoading">
+              <td colspan="5" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+              </td>
+            </tr>
+            <tr *ngFor="let s of studies" [hidden]="isLoading">
+              <td class="ps-4">
+                <div class="fw-bold">{{ s.study_date }}</div>
+              </td>
+              <td>
+                <button class="btn btn-link p-0 fw-bold text-decoration-none" (click)="viewPatient(s.patient_id)">
+                  Patient #{{ s.patient_id }}
+                </button>
+              </td>
+              <td class="font-monospace small text-muted">{{ s.study_id }}</td>
+              <td><span class="badge bg-dark">{{ s.modality }}</span></td>
+              <td class="text-end pe-4">
+                <button class="btn btn-sm btn-outline-primary fw-bold" (click)="viewSeries(s.patient_id, s.id)">
+                  View Series
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card-footer d-flex justify-content-between align-items-center p-3 bg-light">
+        <div class="small text-muted" style="min-width: 250px;">
+          Page <strong>{{ currentPage | number }}</strong> of <strong>{{ totalPages | number }}</strong>
+        </div>
+        
+        <div class="btn-group shadow-sm bg-white">
+          <button class="btn btn-sm border" (click)="goToFirstPage()" [disabled]="currentPage === 1 || isLoading">First</button>
+          <button class="btn btn-sm border" (click)="prevPage()" [disabled]="currentPage === 1 || isLoading">Prev</button>
+          <button class="btn btn-sm border px-3 text-primary fw-bold" disabled>{{ currentPage }}</button>
+          <button class="btn btn-sm border" (click)="nextPage()" [disabled]="currentPage >= totalPages || isLoading">Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
