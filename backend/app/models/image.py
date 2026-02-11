@@ -15,5 +15,6 @@ class Image(Base):
     transfer_syntax_uid = Column(Text, nullable=False)
     study_year = Column(Integer)
     modality = Column(Text)
+    image_url = Column(Text)
     created_at = Column(TIMESTAMP)
     last_updated_at = Column(TIMESTAMP)
