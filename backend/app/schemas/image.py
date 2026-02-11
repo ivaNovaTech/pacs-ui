@@ -13,6 +13,7 @@ class ImageBase(BaseModel):
     transfer_syntax_uid: str
     study_year: Optional[int] = None
     modality: Optional[str] = None
+    image_url: Optional[str] = None
 
 class ImageOut(ImageBase):
     id: int

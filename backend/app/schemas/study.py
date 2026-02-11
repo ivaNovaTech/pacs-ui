@@ -14,6 +14,7 @@ class StudyBase(BaseModel):
 
 class StudyOut(StudyBase):
     id: int
+    mrn: Optional[str] = None
     created_at: Optional[datetime] = None
     last_updated_at: Optional[datetime] = None
 

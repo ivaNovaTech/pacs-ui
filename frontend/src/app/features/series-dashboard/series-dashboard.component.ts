@@ -7,11 +7,11 @@ import { environment } from '../../../environment/environment';
 export interface Series {
   id: number;
   study_id: number;
-  series_instance_uid: string;
+  series_uid: string;
   series_number: number;
   modality: string;
   description?: string;
-  body_part?: string;
+  body_part_examined?: string;
   instance_count: number;
   created_at: string;
 }
@@ -49,7 +49,7 @@ export interface Series {
                   <th class="ps-4">Series #</th>
                   <th>Modality</th>
                   <th>Body Part</th>
-                  <th>Instances</th>
+                  <th>Series UID</th>
                   <th class="text-end pe-4">Actions</th>
                 </tr>
               </thead>
@@ -57,8 +57,8 @@ export interface Series {
                 <tr *ngFor="let s of seriesList">
                   <td class="ps-4 fw-bold">{{ s.series_number }}</td>
                   <td><span class="badge bg-info text-dark">{{ s.modality }}</span></td>
-                  <td>{{ s.body_part || 'N/A' }}</td>
-                  <td>{{ s.instance_count }}</td>
+                  <td>{{ s.body_part_examined || 'N/A' }}</td>
+                  <td>{{ s.series_uid }}</td>
                   <td class="text-end pe-4">
                     <button class="btn btn-sm btn-dark" (click)="viewImages(s.id)">
                       View Images

@@ -7,12 +7,14 @@ import { environment } from '../../../environment/environment';
 export interface Study {
   id: number;
   patient_id: number; 
-  study_id: number;   
+  studyid: string;  
+  accn_num: string; 
   study_uid: string;  
   study_date: string;
   study_year: number;
   modality: string;
   description: string;
+  mrn: string;
 }
 
 @Component({

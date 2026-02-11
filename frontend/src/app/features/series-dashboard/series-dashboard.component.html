@@ -22,9 +22,9 @@
         <td>{{ series.series_number }}</td>
         <td><span class="modality-tag">{{ series.modality }}</span></td>
         <td>{{ series.description || 'No Description' }}</td>
-        <td>{{ series.body_part || 'N/A' }}</td>
+        <td>{{ series.body_part_examined || 'N/A' }}</td>
         <td><strong>{{ series.instance_count }}</strong></td>
-        <td><code class="uid">{{ series.series_instance_uid }}</code></td>
+        <td><code class="uid">{{ series.series_uid }}</code></td>
         <td>{{ series.created_at | date:'short' }}</td>
         <td>
           <button class="btn-view" (click)="viewImages(series.id)">Open Series</button>
