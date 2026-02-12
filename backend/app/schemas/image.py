@@ -17,8 +17,11 @@ class ImageBase(BaseModel):
 
 class ImageOut(ImageBase):
     id: int
-    created_at: Optional[datetime] = None
-    last_updated_at: Optional[datetime] = None
+    patient_name: Optional[str] = None
+    mrn: Optional[str] = None
+    accn_num: Optional[str] = None
+    #created_at: Optional[datetime] = None
+    #last_updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
