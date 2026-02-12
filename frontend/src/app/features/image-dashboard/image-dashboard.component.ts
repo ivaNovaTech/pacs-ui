@@ -1,217 +1,216 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
-import { environment } from '../../../environment/environment';
-
-// We use the global variables set up in main.ts
-declare var cornerstone: any;
-declare var cornerstoneWADOImageLoader: any;
-
-export interface Image {
-  id: number;
-  series_id: number;
-  study_id?: number;
-  image_uid: string;
-  instance_number?: number;
-  image_position?: number;
-  rows?: number;
-  columns?: number;
-  transfer_syntax_uid: string;
-  study_year?: number;
-  modality?: string;
-  created_at?: string;
-  last_updated_at?: string;
-  image_url?: string; 
-}
+import * as dcmjs from 'dcmjs';
 
 @Component({
   selector: 'app-image-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule],
   template: `
-    <div class="container-fluid mt-4 px-4">
-      <nav class="mb-3">
-        <button class="btn btn-link p-0 text-decoration-none fw-bold" (click)="backToSeries()">
-          <i class="bi bi-arrow-left"></i> Back to Series
-        </button>
-      </nav>
-
-      <div class="card shadow-sm border-0">
-        <div class="card-header bg-dark text-white py-3 d-flex justify-content-between align-items-center">
-          <div>
-            <h3 class="fw-bold mb-0">Image Browser</h3>
-            <small class="text-muted text-uppercase">Series: {{ seriesId }}</small>
-          </div>
-          <span class="badge bg-secondary">{{ images.length }} Instances</span>
+    <div class="viewer-container" (wheel)="onWheelScroll($event)">
+      <div class="metadata-overlay" *ngIf="activeDataset">
+        <div class="top-left">
+          <p class="db-source">
+            <i class="bi bi-database-fill"></i> 
+            <strong>PATIENT:</strong> {{ images[currentIndex]?.patient_name }}
+          </p>
+          <p class="db-source">
+            <i class="bi bi-database-fill"></i> 
+            <strong>MRN:</strong> {{ images[currentIndex]?.mrn }}
+          </p>
+          <p class="dicom-source">
+            <i class="bi bi-file-earmark-medical"></i> 
+            <strong>MODALITY:</strong> {{ activeDataset.Modality || images[currentIndex]?.modality }}
+          </p>
         </div>
 
-        <div class="card-body p-4 text-center">
-          <div *ngIf="isLoading" class="py-5">
-            <div class="spinner-border text-primary"></div>
-            <p class="mt-2 text-muted">Retrieving image metadata...</p>
-          </div>
+        <div class="top-right text-end">
+          <p class="dicom-source">
+            <strong>STUDY YEAR:</strong> {{ images[currentIndex]?.study_year }}
+            <i class="bi bi-file-earmark-medical ms-1"></i>
+          </p>
+          <p class="db-source">
+            <strong>ACCESSION:</strong> {{ images[currentIndex]?.accn_num }} 
+            <i class="bi bi-database-fill ms-1"></i>
+          </p>
+        </div>
 
-          <div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4 text-start" *ngIf="!isLoading">
-            <div class="col" *ngFor="let img of images">
-              <div class="card h-100 border-secondary bg-light shadow-sm">
-                <div class="card-body">
-                  <h6 class="card-title fw-bold text-primary">Instance #{{ img.instance_number || 'N/A' }}</h6>
-                  <p class="card-text small mb-1">
-                    <strong>Resolution:</strong> {{ img.rows }} x {{ img.columns }}
-                  </p>
-                  <p class="card-text small text-truncate" title="{{ img.image_uid }}">
-                    <strong>UID:</strong> {{ img.image_uid }}
-                  </p>
-                  <p class="card-text mb-0"><span class="badge bg-dark">{{ img.modality }}</span></p>
-                </div>
-                <div class="card-footer bg-white border-top-0">
-                  <button class="btn btn-sm btn-primary w-100 fw-bold" (click)="openViewer(img)">
-                    <i class="bi bi-eye-fill me-1"></i> View DICOM
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div *ngIf="!isLoading && images.length === 0" class="py-5">
-            <div class="alert alert-info border-0 shadow-sm">No images found for this series.</div>
+        <div class="bottom-left">
+          <p class="dicom-source small">
+            <strong>UID:</strong> {{ images[currentIndex]?.image_uid }}
+          </p>
+          <p class="mt-1">
+            <strong>IMAGE:</strong> {{ currentIndex + 1 }} / {{ images.length }} 
+            (Inst: {{ images[currentIndex]?.instance_number }})
+          </p>
+          <div class="id-specs mt-1">
+            <span>RES: {{ images[currentIndex]?.columns }}x{{ images[currentIndex]?.rows }}</span> | 
+            <span>TSUID: {{ images[currentIndex]?.transfer_syntax_uid }}</span>
           </div>
         </div>
       </div>
-    </div>
+      
+      <canvas #dicomCanvas></canvas>
 
-    <div class="viewer-overlay" *ngIf="isViewerOpen" (click)="closeViewer()">
-      <div class="viewer-card bg-black shadow-lg" (click)="$event.stopPropagation()">
-        <div class="d-flex justify-content-between align-items-center p-3 bg-dark text-white border-bottom border-secondary">
-          <h5 class="mb-0 fw-bold">{{ selectedImage?.modality }} Viewer</h5>
-          <button class="btn-close btn-close-white" (click)="closeViewer()"></button>
-        </div>
-        
-        <div class="viewer-body d-flex justify-content-center align-items-center bg-black">
-          <div #dicomCanvas id="dicomElement" style="width:512px;height:512px;position:relative;">
-             <div *ngIf="!isImageLoaded" class="text-white text-center position-absolute top-50 start-50 translate-middle">
-                <div class="spinner-border spinner-border-sm me-2"></div> Rendering...
-             </div>
-          </div>
-        </div>
-        
-        <div class="p-2 bg-dark text-muted x-small text-center border-top border-secondary">
-          DICOM ID: {{ selectedImage?.image_uid }}
-        </div>
+      <div class="loading-overlay" *ngIf="isLoading">
+        <div class="spinner-border text-light spinner-border-sm"></div>
+        <span class="ms-2">Loading DICOM...</span>
       </div>
     </div>
   `,
   styles: [`
-    .viewer-overlay {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100vw; height: 100vh;
-      background: rgba(0,0,0,0.92);
+    .viewer-container {
+      position: relative;
+      width: 100%;
+      height: 85vh;
+      background: #000;
       display: flex;
       justify-content: center;
       align-items: center;
-      z-index: 9999;
-    }
-    .viewer-card {
-      border-radius: 8px;
       overflow: hidden;
-      border: 1px solid #444;
+      border: 1px solid #333;
     }
-    .viewer-body {
+    canvas { 
+      max-width: 100%; 
+      max-height: 100%; 
+      image-rendering: pixelated; 
+    }
+    .metadata-overlay {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      color: #00ff00;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      pointer-events: none;
       padding: 20px;
-      min-width: 552px;
-      min-height: 552px;
+      z-index: 5;
+      text-shadow: 1px 1px 2px #000;
     }
-    .x-small { font-size: 0.7rem; }
+    .top-left { position: absolute; top: 15px; left: 20px; }
+    .top-right { position: absolute; top: 15px; right: 20px; }
+    .bottom-left { position: absolute; bottom: 15px; left: 20px; }
+    
+    .db-source { color: #a3ffa3; margin-bottom: 2px; }
+    .dicom-source { color: #00ff00; margin-bottom: 2px; }
+    .id-specs { font-size: 11px; color: #00cccc; }
+
+    .loading-overlay {
+      position: absolute;
+      color: white;
+      background: rgba(0,0,0,0.6);
+      padding: 10px 20px;
+      border-radius: 20px;
+      z-index: 10;
+    }
   `]
 })
 export class ImageDashboardComponent implements OnInit {
-  @ViewChild('dicomCanvas') dicomElement!: ElementRef;
+  @ViewChild('dicomCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
+  
+  @Input() images: any[] = []; 
+  
+  @Input() patientId?: string | number;
+  @Input() studyId?: string | number;
+  @Input() seriesId?: string | number;
 
-  images: Image[] = [];
-  patientId: string | null = null;
-  studyId: string | null = null;
-  seriesId: string | null = null;
-  isLoading: boolean = true;
+  currentIndex = 0;
+  activeDataset: any = null;
+  isLoading = false;
 
-  isViewerOpen: boolean = false;
-  isImageLoaded: boolean = false;
-  selectedImage: Image | null = null;
+  constructor(private http: HttpClient) {}
 
-  constructor(
-    private route: ActivatedRoute,
-    private router: Router,
-    private http: HttpClient
-  ) {}
-
-  ngOnInit(): void {
-    const map = this.route.snapshot.paramMap;
-    this.patientId = map.get('id');
-    this.studyId = map.get('sid');
-    this.seriesId = map.get('serid');
-
-    if (this.patientId && this.studyId && this.seriesId) {
-      this.loadImages(+this.patientId, +this.studyId, +this.seriesId);
+  ngOnInit() {
+    if (this.images && this.images.length > 0) {
+      this.sortAndLoad();
+    } else if (this.patientId && this.studyId && this.seriesId) {
+      this.fetchImageList();
     }
   }
 
-  loadImages(pId: number, sId: number, serId: number): void {
+  fetchImageList() {
     this.isLoading = true;
-    const url = `${environment.apiUrl}/api/patients/${pId}/studies/${sId}/series/${serId}/images`;
-
-    this.http.get<Image[]>(url).subscribe({
+    const url = `/api/patients/${this.patientId}/studies/${this.studyId}/series/${this.seriesId}/images`;
+    this.http.get<any[]>(url).subscribe({
       next: (data) => {
         this.images = data;
-        this.isLoading = false;
+        this.sortAndLoad();
       },
-      error: (err) => {
-        console.error('Image API Load Failed:', err);
-        this.isLoading = false;
-      }
+      error: () => this.isLoading = false
     });
   }
 
-  openViewer(img: Image): void {
-    if (!img.image_url) {
-      alert("Image source (URL) is missing.");
-      return;
+  sortAndLoad() {
+    // Sort by instance_number to ensure correct stack order
+    this.images.sort((a, b) => (a.instance_number || 0) - (b.instance_number || 0));
+    this.loadActiveSlice();
+  }
+
+  onWheelScroll(event: WheelEvent) {
+    event.preventDefault();
+    if (this.images.length <= 1 || this.isLoading) return;
+
+    if (event.deltaY > 0) {
+      this.currentIndex = (this.currentIndex + 1) % this.images.length;
+    } else {
+      this.currentIndex = (this.currentIndex - 1 + this.images.length) % this.images.length;
     }
-    this.selectedImage = img;
-    this.isViewerOpen = true;
-    this.isImageLoaded = false;
-
-    // We must wait for Angular's *ngIf to put the #dicomCanvas into the DOM
-    setTimeout(() => {
-      this.displayDICOM(img.image_url!);
-    }, 150);
+    this.loadActiveSlice();
   }
 
-  displayDICOM(url: string): void {
-    const element = this.dicomElement.nativeElement;
+  async loadActiveSlice() {
+    const imgData = this.images[this.currentIndex];
+    if (!imgData?.image_url) return;
+
+    this.isLoading = true;
+    try {
+      const buffer = await this.http.get(imgData.image_url, { responseType: 'arraybuffer' }).toPromise();
+      if (!buffer) throw new Error("Empty DICOM");
+
+      const dicomDict = dcmjs.data.DicomMessage.readFile(buffer);
+      const dataset = dcmjs.data.DicomMetaDictionary.naturalizeDataset(dicomDict.dict);
+      
+      let pixelData = dataset.PixelData;
+      if (Array.isArray(pixelData)) pixelData = pixelData[0];
+
+      this.activeDataset = dataset;
+      this.renderCanvas(dataset, pixelData);
+    } catch (err) {
+      console.error("Render error:", err);
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  renderCanvas(dataset: any, pixelData: any) {
+    if (!this.canvasRef || !pixelData) return;
+    const canvas = this.canvasRef.nativeElement;
+    const ctx = canvas.getContext('2d')!;
     
-    // 1. Setup element for cornerstone
-    cornerstone.enable(element);
-    
-    // 2. Format URL for the WADO loader
-    const imageId = `wadouri:${url}`;
+    canvas.width = dataset.Columns || 512;
+    canvas.height = dataset.Rows || 512;
 
-    // 3. Request the image
-    cornerstone.loadImage(imageId).then((image: any) => {
-      this.isImageLoaded = true;
-      cornerstone.displayImage(element, image);
-      cornerstone.fitToWindow(element);
-    }).catch((err: any) => {
-      console.error('Cornerstone Load Failed:', err);
-    });
-  }
+    const slope = dataset.RescaleSlope || 1;
+    const intercept = dataset.RescaleIntercept || 0;
+    const wc = Array.isArray(dataset.WindowCenter) ? dataset.WindowCenter[0] : (dataset.WindowCenter || 127);
+    const ww = Array.isArray(dataset.WindowWidth) ? dataset.WindowWidth[0] : (dataset.WindowWidth || 255);
 
-  closeViewer(): void {
-    this.isViewerOpen = false;
-    this.selectedImage = null;
-  }
+    const imageData = ctx.createImageData(canvas.width, canvas.height);
+    const pixelArray = dataset.BitsAllocated === 8 ? new Uint8Array(pixelData) : new Int16Array(pixelData);
+    const lowBound = wc - ww / 2;
 
-  backToSeries(): void {
-    this.router.navigate(['/patients', this.patientId, 'studies', this.studyId, 'series']);
+    for (let i = 0; i < pixelArray.length; i++) {
+      const val = pixelArray[i] * slope + intercept;
+      let brightness = ((val - lowBound) / ww) * 255;
+      brightness = Math.min(Math.max(brightness, 0), 255);
+
+      const idx = i * 4;
+      imageData.data[idx] = brightness;
+      imageData.data[idx + 1] = brightness;
+      imageData.data[idx + 2] = brightness;
+      imageData.data[idx + 3] = 255;
+    }
+    ctx.putImageData(imageData, 0, 0);
   }
 }
