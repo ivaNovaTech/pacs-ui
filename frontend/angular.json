@@ -20,14 +20,15 @@
         "build": {
           "builder": "@angular/build:application",
           "options": {
+            "outputPath": "dist/frontend",
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "allowedCommonJsDependencies": [
-              "cornerstone-core",
-              "cornerstone-wado-image-loader",
+              "dcmjs",
               "dicom-parser"
             ],
+            "externalDependencies": [],
             "assets": [
               {
                 "glob": "**/*",
@@ -37,6 +38,7 @@
             "styles": [
               "src/styles.scss"
             ],
+            "scripts": [],
             "polyfills": [
               "zone.js"
             ]

@@ -1,8 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Router, RouterModule } from '@angular/router';
 import { environment } from '../../../environment/environment';
+import { Subject, Subscription } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 export interface Study {
   id: number;
@@ -23,16 +25,30 @@ export interface Study {
   imports: [CommonModule, RouterModule],
   templateUrl: './study-inventory.component.html'
 })
-export class StudyInventoryComponent implements OnInit {
+export class StudyInventoryComponent implements OnInit, OnDestroy {
   studies: Study[] = [];
   currentPage: number = 1;
   pageSize: number = 10;
   totalCount: number = 0;
   isLoading: boolean = false;
 
+  // Search Logic
+  searchTerm: string = '';
+  private searchSubject = new Subject<string>();
+  private searchSubscription?: Subscription;
+
   constructor(private http: HttpClient, private router: Router) {}
 
   ngOnInit(): void {
+    this.searchSubscription = this.searchSubject.pipe(
+      debounceTime(400),
+      distinctUntilChanged()
+    ).subscribe(term => {
+      this.searchTerm = term;
+      this.currentPage = 1; 
+      this.loadData();
+    });
+
     this.loadData();
   }
 
@@ -40,10 +56,19 @@ export class StudyInventoryComponent implements OnInit {
     return this.totalCount > 0 ? Math.ceil(this.totalCount / this.pageSize) : 1;
   }
 
+  onSearchChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.searchSubject.next(input.value);
+  }
+
   loadData(): void {
     this.isLoading = true;
     const offset = (this.currentPage - 1) * this.pageSize;
-    const url = `${environment.apiUrl}/api/studies/?limit=${this.pageSize}&offset=${offset}`;
+    
+    let url = `${environment.apiUrl}/api/studies/?limit=${this.pageSize}&offset=${offset}`;
+    if (this.searchTerm) {
+      url += `&search=${encodeURIComponent(this.searchTerm)}`;
+    }
 
     this.http.get<any>(url).subscribe({
       next: (data) => {
@@ -65,8 +90,10 @@ export class StudyInventoryComponent implements OnInit {
   }
 
   nextPage(): void {
-    this.currentPage++;
-    this.loadData();
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+      this.loadData();
+    }
   }
 
   prevPage(): void {
@@ -81,13 +108,17 @@ export class StudyInventoryComponent implements OnInit {
     this.loadData();
   }
 
-  // Matches path: 'patients/:id/studies'
   viewPatient(patientId: number): void {
     this.router.navigate(['/patients', patientId, 'studies']);
   }
 
-  // Matches path: 'patients/:id/studies/:sid/series'
   viewSeries(patientId: number, studyId: number): void {
     this.router.navigate(['/patients', patientId, 'studies', studyId, 'series']);
+  }
+
+  ngOnDestroy(): void {
+    if (this.searchSubscription) {
+      this.searchSubscription.unsubscribe();
+    }
   }
 }
