@@ -1,14 +1,14 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from app.routes import patient
-from app.routes import study  
-import os
 
+# Import your route modules
+# Ensure 'health' is the filename created above
+from app.routes import patient, study, system, health
 
-app = FastAPI(title="PACS API")
+app = FastAPI(title="IVANOVA API")
 
-# Necessary for Angular to communicate with FastAPI
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -19,24 +19,19 @@ app.add_middleware(
 
 @app.get("/")
 def root():
-    return {"message": "PACS API is online"}
+    return {"message": "PACS API is online", "version": "1.2-beta"}
 
-@app.get("/health")
-def health():
-    return {"status": "healthy"}
-
-# All hierarchical routes are now under /api/patients and /api/studies
-app.include_router(patient.router, prefix="/api")
-app.include_router(study.router, prefix="/api")
+# --- ROUTER REGISTRATION ---
+app.include_router(patient.router, prefix="/api", tags=["patients"])
+app.include_router(study.router, prefix="/api", tags=["studies"])
+app.include_router(system.router, prefix="/api", tags=["system"])
 
 
-# Get the directory where main.py actually lives (/backend/app)
+# --- STATIC FILES ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
 
-# Mount using the absolute path
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+if not os.path.exists(STATIC_DIR):
+    os.makedirs(STATIC_DIR)
 
-# Mount the static folder
-#Makes sample DICOM files available at: https://pacs-api.ivanova.tech/static/samples/ct_sample.dcm
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
