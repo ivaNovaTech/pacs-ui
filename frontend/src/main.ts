@@ -1,9 +1,8 @@
 import { bootstrapApplication } from '@angular/platform-browser';
-import { appConfig } from './app/app.config';
+import { appConfig } from './app/app.config'; // This looks into the app folder
 import { AppComponent } from './app/app.component';
 
-// No Cornerstone initialization needed here anymore.
-// We are handling DICOM parsing and rendering directly in the component.
+// Do NOT import routes here. appConfig handles that.
 
 bootstrapApplication(AppComponent, appConfig)
   .catch((err) => console.error(err));

@@ -2,68 +2,103 @@
   
   <aside class="sidebar d-none d-lg-flex flex-column shadow">
     <div class="sidebar-header border-bottom border-secondary p-4">
-      <h5 class="fw-bold mb-0 text-white">
-        <i class="bi bi-shield-plus text-primary me-2"></i>PACS <span class="text-primary">PORTAL</span>
-      </h5>
+      <a routerLink="/" class="text-decoration-none d-block logo-link">
+        <h5 class="fw-bold mb-0 text-white">
+          <i class="bi bi-shield-plus text-primary me-2"></i>IVANOVA <span class="text-primary">PACS</span>
+        </h5>
+      </a>
+      
+      <div class="mt-3 d-flex flex-column gap-2">
+        <div class="d-flex align-items-center">
+          <div class="status-pulse me-2" [ngClass]="isApiConnected ? 'online' : 'offline'"></div>
+          <small class="text-uppercase fw-bold" [ngClass]="isApiConnected ? 'text-success' : 'text-danger'" style="font-size: 0.6rem; letter-spacing: 0.5px;">
+            API: {{ isApiConnected ? 'ONLINE' : 'OFFLINE' }}
+          </small>
+        </div>
+        <div class="d-flex align-items-center status-container" [attr.title]="'Last sync: ' + lastSyncTime" style="cursor: help;">
+          <div class="status-pulse me-2" [ngClass]="isDbConnected ? 'online' : 'offline'"></div>
+          <small class="text-uppercase fw-bold" [ngClass]="isDbConnected ? 'text-success' : 'text-danger'" style="font-size: 0.6rem; letter-spacing: 0.5px;">
+            DB: {{ isDbConnected ? 'READY' : 'ERROR' }}
+          </small>
+        </div>
+      </div>
     </div>
 
     <nav class="flex-grow-1 mt-3">
-      <a routerLink="/patients" routerLinkActive="active" class="nav-link">
-        <i class="bi bi-people-fill"></i>
-        <span>Patient Directory</span>
-      </a>
-      <a routerLink="/studies" routerLinkActive="active" class="nav-link">
-        <i class="bi bi-database-fill"></i>
-        <span>Global Study List</span>
-      </a>
+      <a routerLink="/analytics" routerLinkActive="active" class="nav-link"><i class="bi bi-speedometer2"></i> <span>Analytics Dashboard</span></a>
+      <a routerLink="/patients" routerLinkActive="active" class="nav-link"><i class="bi bi-people-fill"></i> <span>Patient Directory</span></a>
+      <a routerLink="/studies" routerLinkActive="active" class="nav-link"><i class="bi bi-database-fill"></i> <span>Global Study List</span></a>
     </nav>
 
-    <div class="p-3 bg-dark mt-auto border-top border-secondary small text-muted">
-      System: <span class="text-success">Connected</span>
+    <div class="p-4 border-top border-secondary small">
+      <div class="d-flex justify-content-between mb-2"><span class="text-white-50">CPU</span><span class="text-primary fw-bold">{{ systemStats.cpu_usage }}%</span></div>
+      <div class="d-flex justify-content-between mb-2"><span class="text-white-50">RAM</span><span class="text-info fw-bold">{{ systemStats.ram_used }}</span></div>
+      <div class="d-flex justify-content-between"><span class="text-white-50">HDD</span><span class="text-warning fw-bold">{{ systemStats.disk_used }}</span></div>
+      <div class="text-end" style="font-size: 0.65rem;"><span class="text-white-50">{{ systemStats.disk_usage }}% capacity used</span></div>
     </div>
   </aside>
 
   <header class="d-lg-none bg-dark p-3 shadow-sm sticky-top border-bottom border-secondary">
-    <div class="d-flex align-items-center">
-      <h5 class="fw-bold mb-0 text-white">
-        <i class="bi bi-shield-plus text-primary me-2"></i>PACS <span class="text-primary">PORTAL</span>
-      </h5>
+    <div class="d-flex align-items-center justify-content-between">
+      <a routerLink="/" class="text-decoration-none logo-link">
+        <h5 class="fw-bold mb-0 text-white"><i class="bi bi-shield-plus text-primary me-2"></i>IVANOVA <span class="text-primary">PACS</span></h5>
+      </a>
+      <div class="d-flex gap-3">
+        <div class="d-flex align-items-center"><div class="status-pulse sm me-1" [ngClass]="isApiConnected ? 'online' : 'offline'"></div><small class="fw-bold" [ngClass]="isApiConnected ? 'text-success' : 'text-danger'" style="font-size: 0.6rem;">API</small></div>
+        <div class="d-flex align-items-center"><div class="status-pulse sm me-1" [ngClass]="isDbConnected ? 'online' : 'offline'"></div><small class="fw-bold" [ngClass]="isDbConnected ? 'text-success' : 'text-danger'" style="font-size: 0.6rem;">DB</small></div>
+      </div>
     </div>
   </header>
 
   <main class="main-stage">
     <router-outlet></router-outlet>
-    
-    <div class="mobile-spacer d-lg-none" style="height: 100px;"></div>
-    <div class="desktop-spacer d-none d-lg-block" style="height: 80px;"></div>
+    <div class="mobile-spacer d-lg-none" style="height: 140px;"></div>
   </main>
 
-  <nav class="fixed-bottom d-lg-none bg-white border-top shadow-lg d-flex justify-content-around py-2" 
-       style="z-index: 1060; margin-bottom: 45px;">
-    <a routerLink="/patients" routerLinkActive="text-primary fw-bold" class="text-center text-decoration-none text-muted px-3">
-      <i class="bi bi-people-fill d-block fs-4"></i>
-      <span style="font-size: 0.7rem;">Patients</span>
-    </a>
-    <a routerLink="/studies" routerLinkActive="text-primary fw-bold" class="text-center text-decoration-none text-muted px-3">
-      <i class="bi bi-database-fill d-block fs-4"></i>
-      <span style="font-size: 0.7rem;">Studies</span>
-    </a>
-  </nav>
+  <div class="fixed-bottom d-lg-none bg-white border-top shadow-lg" style="z-index: 1060; margin-bottom: 35px;">
+    <div class="d-flex justify-content-around py-2 bg-dark border-bottom border-secondary text-center" style="font-size: 0.7rem;">
+      <div><small class="text-white-50 d-block" style="font-size: 0.5rem;">CPU</small><span class="text-primary fw-bold">{{ systemStats.cpu_usage }}%</span></div>
+      <div><small class="text-white-50 d-block" style="font-size: 0.5rem;">RAM</small><span class="text-info fw-bold">{{ systemStats.ram_used.split(' / ')[0] }}MB</span></div>
+      <div><small class="text-white-50 d-block" style="font-size: 0.5rem;">HDD</small><span class="text-warning fw-bold">{{ systemStats.disk_usage }}%</span></div>
+    </div>
 
-  <footer class="fixed-bottom bg-light border-top py-2 px-3 shadow-sm" style="z-index: 1050;" id="pacs-footer">
-    <div class="container-fluid">
-      <div class="row align-items-center">
-        <div class="col-md-3 text-muted" style="font-size: 0.75rem;">
-          <span>&copy; {{ currentYear }} PACS Portal</span>
-          <span class="ms-2 border-start ps-2 text-primary fw-bold">v1.2-beta</span>
+    <nav class="d-flex justify-content-around py-2">
+      <a routerLink="/analytics" routerLinkActive="text-primary fw-bold" class="text-center text-decoration-none text-muted px-3"><i class="bi bi-speedometer2 d-block fs-4"></i><span style="font-size: 0.7rem;">Analytics</span></a>
+      <a routerLink="/patients" routerLinkActive="text-primary fw-bold" class="text-center text-decoration-none text-muted px-3"><i class="bi bi-people-fill d-block fs-4"></i><span style="font-size: 0.7rem;">Patients</span></a>
+      <a routerLink="/studies" routerLinkActive="text-primary fw-bold" class="text-center text-decoration-none text-muted px-3"><i class="bi bi-database-fill d-block fs-4"></i><span style="font-size: 0.7rem;">Studies</span></a>
+    </nav>
+  </div>
+
+  <footer class="fixed-bottom bg-light border-top py-2 px-3 shadow-sm" style="z-index: 1080; height: 35px;" id="pacs-footer">
+    <div class="container-fluid h-100">
+      <div class="row align-items-center h-100">
+        <div class="col-4 col-md-2 text-muted" style="font-size: 0.7rem;">
+          <span>&copy; {{ currentYear }} PACS</span>
         </div>
-        <div class="col-md-9 text-end text-muted d-none d-md-block" style="font-size: 0.7rem; line-height: 1.2;">
+
+        <div class="col-8 d-lg-none text-end">
+          <button class="btn btn-link p-0 text-info fw-bold text-decoration-none" style="font-size: 0.65rem;" (click)="showMobileDisclaimer = !showMobileDisclaimer">
+            <i class="bi bi-info-circle-fill"></i> {{ showMobileDisclaimer ? 'CLOSE INFO' : 'LEGAL DISCLAIMER' }}
+          </button>
+        </div>
+
+        <div class="col-md-10 text-end text-muted d-none d-md-block" style="font-size: 0.65rem; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
           <i class="bi bi-info-circle-fill me-1 text-info"></i>
-          <strong>FOR DEMO PURPOSES ONLY:</strong> 
-          All patient data, including names, dates of birth, and images are purely fictitious and 
-          randomly auto-generated.
+          <strong>FOR DEMO PURPOSES ONLY:</strong> All patient data, including names,DOBs, and images are purely fictitious and randomly auto-generated. No PII stored here. Not for clinical use.
         </div>
       </div>
     </div>
   </footer>
+
+  <div *ngIf="showMobileDisclaimer" class="mobile-disclaimer-overlay d-lg-none">
+    <div class="p-3 bg-white shadow-lg border-top border-info mx-2 rounded-top border-3">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h6 class="mb-0 text-info" style="font-size: 0.85rem;"><i class="bi bi-info-circle-fill me-1"></i> Data Disclaimer</h6>
+        <button class="btn-close btn-sm" (click)="showMobileDisclaimer = false"></button>
+      </div>
+      <p class="text-muted mb-0" style="font-size: 0.7rem; line-height: 1.4;">
+        <strong>FOR DEMO PURPOSES ONLY:</strong> All patient data, including names,DOBs, and images are purely fictitious and randomly auto-generated. No PII stored here.
+      </p>
+    </div>
+  </div>
 </div>

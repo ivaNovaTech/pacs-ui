@@ -105,7 +105,7 @@ export class StudyDashboardComponent implements OnInit {
   viewSeries(studyId: number): void {
     // 2. CRITICAL NAVIGATION:
     // This builds the path: /patients/5/studies/15/series
-    // Ensure your app.routes.ts has: path: 'patients/:id/studies/:sid/series'
+    // Ensure app.routes.ts has: path: 'patients/:id/studies/:sid/series'
     console.log(`Navigating to Series: /patients/${this.patientId}/studies/${studyId}/series`);
     
     this.router.navigate(['/patients', this.patientId, 'studies', studyId, 'series']);
