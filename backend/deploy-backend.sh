@@ -1,19 +1,46 @@
 #!/bin/bash
-# Unique tag based on Unix timestamp
+
+# 1. SMART SEARCH for .env
+if [ -f .env ]; then
+    ENV_FILE=".env"
+elif [ -f ../.env ]; then
+    ENV_FILE="../.env"
+else
+    echo "❌ .env file not found in current or parent directory! Script aborted."
+    exit 1
+fi
+
+# 2. LOAD variables using source (handles quotes correctly)
+echo "📂 Loading variables from $ENV_FILE"
+set -a
+source "$ENV_FILE"
+set +a
+
+# 3. Unique tag and Path construction
 TAG="latest-$(date +%s)" 
-FULL_IMAGE_PATH="us-central1-docker.pkg.dev/mwakilishi-1770258957/pacs-repo/pacs-backend:$TAG"
+BACK_PATH="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${REPO_NAME}/${IMAGE_NAME_BACK}:${TAG}"
 
-echo "🚀 Offloading BUILD to Google Cloud Build (Unique tag: $TAG)"
+echo "🚀 Offloading BACKEND BUILD to Google Cloud Build"
+echo "Target: $BACK_PATH"
 
-# 1. Build & Push REMOTELY (Bypasses the 2GB node limit)
-gcloud builds submit --tag $FULL_IMAGE_PATH . || exit 1
+# 4. Determine Context (Are we in backend/ or root?)
+if [[ "$PWD" == *"/backend" ]]; then 
+    CONTEXT_DIR="."
+else 
+    CONTEXT_DIR="./backend"
+fi
+
+# 5. Execute Remote Build
+# This sends the code to GCP so your Mac doesn't have to do the heavy lifting
+gcloud builds submit --tag "$BACK_PATH" "$CONTEXT_DIR" || exit 1
 
 echo "☸️ Patching GKE Backend Deployment..."
 
-# 2. Update the Backend Deployment
-kubectl set image deployment/pacs-backend pacs-api=$FULL_IMAGE_PATH
+# 6. Update GKE
+# Ensure 'pacs-api' matches the container name in your deployment yaml
+kubectl set image deployment/pacs-backend pacs-api="$BACK_PATH"
 
-# 3. Check status
+echo "⏳ Waiting for rollout..."
 kubectl rollout status deployment/pacs-backend
 
-echo "✅ Backend updated to $TAG on GKE"
+echo "✅ IVANOVA PACS Backend updated to $TAG on GKE"
