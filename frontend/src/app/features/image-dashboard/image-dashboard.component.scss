@@ -1,31 +1,46 @@
-.pacs-container {
-  padding: 20px;
+.app-wrapper {
+  display: flex;
+  height: 100vh;
+  background-color: #f8f9fc;
+}
+
+.sidebar {
+  width: 250px;
+  background-color: #1a1c23;
+  z-index: 1000;
   
-  .uid {
-    font-family: monospace;
-    background: #f4f4f4;
-    padding: 2px 4px;
-    font-size: 0.85rem;
-  }
+  .nav-link {
+    color: rgba(255,255,255,0.7);
+    padding: 0.8rem 1rem;
+    border-radius: 5px;
+    margin-bottom: 5px;
+    transition: all 0.2s;
 
-  .path-text {
-    color: #666;
-    word-break: break-all; // Prevents long paths from breaking the table layout
-  }
-
-  .pacs-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 1rem;
-
-    th, td {
-      border-bottom: 1px solid #ddd;
-      padding: 12px;
-      text-align: left;
+    &:hover {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
     }
 
-    tr:hover {
-      background-color: #f9f9f9;
+    &.active {
+      background: #4e73df;
+      color: #fff;
     }
   }
+}
+
+.main-stage {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 60px;
+}
+
+.extra-small {
+  font-size: 0.65rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.transition-all {
+  transition: all 0.3s ease-in-out;
 }

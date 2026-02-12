@@ -1,4 +1,4 @@
-/* Layout Container */
+/* --- Layout & Global Wrappers --- */
 .app-wrapper {
   display: flex;
   height: 100vh;
@@ -10,7 +10,6 @@
   .app-wrapper { flex-direction: row; }
 }
 
-/* Sidebar Styling */
 .sidebar {
   width: 260px;
   background-color: #212529;
@@ -19,6 +18,58 @@
   flex-shrink: 0;
 }
 
+/* --- Logo & Title --- */
+.logo-link {
+  transition: opacity 0.2s ease-in-out;
+  text-decoration: none !important;
+  
+  &:hover {
+    opacity: 0.8;
+    cursor: pointer;
+  }
+}
+
+/* --- HEARTBEAT & PULSE INDICATOR --- */
+.status-pulse {
+  width: 10px;           
+  height: 10px;          
+  border-radius: 50%;    
+  display: inline-block; 
+  position: relative;
+
+  // Smaller variant for mobile header
+  &.sm {
+    width: 8px;
+    height: 8px;
+  }
+
+  &.online {
+    background-color: #1cc88a; // Success Green
+    box-shadow: 0 0 0 0 rgba(28, 200, 138, 0.7);
+    animation: pulse-green 2s infinite;
+  }
+
+  &.offline {
+    background-color: #e74a3b; // Danger Red
+    box-shadow: 0 0 0 0 rgba(231, 74, 59, 0.7);
+    animation: pulse-red 2s infinite;
+  }
+}
+
+/* Pulse Keyframes */
+@keyframes pulse-green {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(28, 200, 138, 0.7); }
+  70% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(28, 200, 138, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(28, 200, 138, 0); }
+}
+
+@keyframes pulse-red {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(231, 74, 59, 0.7); }
+  70% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(231, 74, 59, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(231, 74, 59, 0); }
+}
+
+/* --- Navigation --- */
 .nav-link {
   color: #adb5bd;
   padding: 1rem 1.5rem;
@@ -28,6 +79,11 @@
   border-left: 4px solid transparent;
   text-decoration: none;
   transition: all 0.2s;
+
+  &:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.05);
+  }
 }
 
 .nav-link.active {
@@ -37,7 +93,7 @@
   font-weight: 600;
 }
 
-/* Main Content Area */
+/* --- Main Stage & Footer --- */
 .main-stage {
   flex-grow: 1;
   overflow-y: auto;
@@ -45,7 +101,6 @@
   position: relative;
 }
 
-/*Ensures it doesn't hide behind sidebar on desktop */
 #pacs-footer {
   left: 0;
   width: 100%;
@@ -58,14 +113,27 @@
   }
 }
 
+.mobile-disclaimer-overlay {
+  position: fixed;
+  bottom: 80px; /* Above the navigation bar */
+  left: 0;
+  right: 0;
+  z-index: 1100;
+  animation: slideUp 0.3s ease-out;
 
-/* Ensure the mobile nav doesn't overlap content */
-.main-stage {
-  min-height: 100vh;
-  background-color: #f8f9fa;
+  .rounded-top {
+    border-top: 3px solid #0dcaf0;
+    border-radius: 12px 12px 0 0;
+  }
 }
 
-/* Style for the mobile nav icons */
-.fixed-bottom .nav-link-mobile.active {
-  color: #0d6efd !important; /* Bootstrap primary color */
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+#pacs-footer {
+  display: flex;
+  align-items: center;
+  background-color: #f8f9fa !important;
 }
