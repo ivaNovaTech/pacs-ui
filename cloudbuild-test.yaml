@@ -44,5 +44,8 @@ steps:
     id: 'Test Build Frontend'
     args: ['build', '-t', 'test-ui', './frontend']
 
-
-# Note: We do NOT push images or touch GKE here.
+options:
+ # This satisfies requirement service account
+  logging: CLOUD_LOGGING_ONLY
+  # This helps local builds ignore things they don't understand
+  substitution_option: 'ALLOW_LOOSE'
