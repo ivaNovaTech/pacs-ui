@@ -14,7 +14,7 @@ steps:
         docker push ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-backend:${SHORT_SHA}
         docker push ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-ui:${SHORT_SHA}
 
-  # 2. Database Migration
+  # 2. Database Migration with Polling Logic
   - name: 'gcr.io/cloud-builders/gcloud'
     id: 'Migrate DB'
     entrypoint: 'bash'
@@ -24,24 +24,37 @@ steps:
         gcloud components install gke-gcloud-auth-plugin --quiet
         gcloud container clusters get-credentials ${_CLUSTER_NAME} --zone ${_REGION} --project ${PROJECT_ID}
         
+        # Ensure fresh start
         kubectl delete job pacs-migration-job --ignore-not-found
         
+        # Apply the migration job
         sed "s|image: .*pacs-migrations:.*|image: ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-migrations:${SHORT_SHA}|g" k8s/flyway-job.yaml > flyway-run.yaml
         kubectl apply -f flyway-run.yaml
         
-        echo "Waiting for migration to complete..."
-        # Notice the double $$ below to tell Cloud Build "this is a bash variable"
-        if ! kubectl wait --for=condition=complete job/pacs-migration-job --timeout=180s; then
-          STATUS=$$(kubectl get job pacs-migration-job -o jsonpath='{.status.succeeded}')
-          if [ "$$STATUS" == "1" ]; then
-            echo "Migration already succeeded. Moving to deploy..."
+        echo "Checking migration status..."
+        # Loop 12 times (max 60 seconds) to check status manually
+        for i in {1..12}; do
+          # Check for success
+          SUCCESS=$$(kubectl get job pacs-migration-job -o jsonpath='{.status.succeeded}' 2>/dev/null)
+          if [ "$$SUCCESS" == "1" ]; then
+            echo "Migration SUCCESSFUL (Version 9+). Moving to deploy..."
             exit 0
-          else
+          fi
+          
+          # Check for failure
+          FAILED=$$(kubectl get job pacs-migration-job -o jsonpath='{.status.failed}' 2>/dev/null)
+          if [ "$$FAILED" == "1" ]; then
             echo "MIGRATION FAILED! Fetching logs..."
             kubectl logs -l job-name=pacs-migration-job -c flyway
             exit 1
           fi
-        fi
+          
+          echo "Still processing... (attempt $$i/12)"
+          sleep 5
+        done
+
+        echo "ERROR: Migration timed out after 60 seconds!"
+        exit 1
     env:
       - 'CLOUDSDK_COMPUTE_ZONE=${_REGION}'
       - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER_NAME}'
