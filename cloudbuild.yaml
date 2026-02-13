@@ -1,42 +1,56 @@
 steps:
-  # Step 1: Build the Migration Image
+  # Step 1: Build & Push All Three Images
   - name: 'gcr.io/cloud-builders/docker'
-    id: 'Build Migration Image'
-    dir: 'backend'
+    id: 'Build & Push DB, Backend, and Frontend'
+    entrypoint: 'bash'
     args:
-      - 'build'
-      - '-t'
-      - '${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-migrations:${SHORT_SHA}'
-      - '-f'
-      - 'migrations/Dockerfile.flyway'
-      - '.'
+      - '-c'
+      - |
+        # Build Migration, Backend, and Frontend
+        docker build -t ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-migrations:${SHORT_SHA} -f backend/migrations/Dockerfile.flyway backend/.
+        docker build -t ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-backend:${SHORT_SHA} backend/.
+        docker build -t ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-ui:${SHORT_SHA} frontend/.
+        
+        # Push all to Artifact Registry
+        docker push ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-migrations:${SHORT_SHA}
+        docker push ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-backend:${SHORT_SHA}
+        docker push ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-ui:${SHORT_SHA}
 
-  # Step 2: Push the image
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'Push Image'
-    args:
-      - 'push'
-      - '${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-migrations:${SHORT_SHA}'
-
-  # Step 3: Run Migration (Authentication + Repair + Migrate)
+  # Step 2: Database Migration (Verified Step)
   - name: 'gcr.io/cloud-builders/gcloud'
     id: 'Migrate DB'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        # A. Install mandatory auth plugin
         gcloud components install gke-gcloud-auth-plugin --quiet
-        
-        # B. Connect to  cluster
         gcloud container clusters get-credentials ${_CLUSTER_NAME} --zone ${_REGION} --project ${PROJECT_ID}
-        
-        # C. Update the YAML with the new image tag
         sed "s|image: .*pacs-migrations:.*|image: ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-migrations:${SHORT_SHA}|g" k8s/flyway-job.yaml > flyway-run.yaml
-        
-        # D. Cleanup old job and apply new one
         kubectl delete job pacs-migration-job --ignore-not-found
         kubectl apply -f flyway-run.yaml
+    env:
+      - 'CLOUDSDK_COMPUTE_ZONE=${_REGION}'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER_NAME}'
+      - 'USE_GKE_GCLOUD_AUTH_PLUGIN=True'
+
+  # Step 3: Zero-Downtime Deployment
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'Deploy Updates'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud container clusters get-credentials ${_CLUSTER_NAME} --zone ${_REGION} --project ${PROJECT_ID}
+        
+        # Update Backend (Using container name: pacs-api)
+        kubectl set image deployment/pacs-backend pacs-api=${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-backend:${SHORT_SHA}
+        
+        # Update Frontend (Using container name: pacs-ui)
+        kubectl set image deployment/pacs-frontend pacs-ui=${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-ui:${SHORT_SHA}
+        
+        # Monitor the rollout
+        kubectl rollout status deployment/pacs-backend
+        kubectl rollout status deployment/pacs-frontend
     env:
       - 'CLOUDSDK_COMPUTE_ZONE=${_REGION}'
       - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER_NAME}'
