@@ -8,6 +8,26 @@ This project is a high-performance **Proof of Concept (PoC)** for a modern Pictu
 
 ---
 
+## 🗄️ Zero-Downtime Database Evolution
+
+The data migration followed a multi-stage **High-Availability (HA)** strategy, ensuring zero data loss and minimal cutover downtime while transitioning from a legacy **On-Premises SQL Server 2019** environment to a cutting-edge **Cloud SQL PostgreSQL 18** engine.
+
+### Phase 1: Hybrid-Cloud Synchronization (On-Prem to Cloud)
+* **Source:** Legacy SQL Server 2019 running on-premises.
+* **Tooling:** Utilized **GCP Database Migration Service (DMS)** to bridge the gap to Cloud SQL for PostgreSQL 17.
+* **Continuous Replication:** Leveraged **CDC (Change Data Capture)** to stream live transactions over a secure tunnel, keeping the cloud destination in sync with the local production environment.
+* **Heterogeneous Conversion:** Performed a complex schema translation from **T-SQL to PL/pgSQL** to maintain 100% data integrity during the engine switch.
+
+### Phase 2: Cloud-Native Version Leap (v17 → v18)
+* **The "Double-Jump" Strategy:** To access the latest PostgreSQL 18 features (such as enhanced parallel query processing and storage optimizations), a second migration was executed.
+* **Blue-Green Upgrading:** Launched a fresh PostgreSQL 18 instance and treated the v17 instance as the new source. This allowed for side-by-side validation without impacting the primary migration stream.
+
+### Phase 3: Zero-Downtime Cutover
+* **Lag Elimination:** The final application cutover was only initiated once the replication lag between the on-premises source and the PostgreSQL 18 target reached **<1 second**.
+* **Seamless Switch:** Transitioned the application connection strings to the new v18 instance, effectively retiring the on-premises hardware with near-zero service interruption.
+
+---
+
 ## 🏗️ Technical Architecture & Cost Optimization
 
 ### **⚡ Performance & Hardware Specs (GCP)**
@@ -16,7 +36,7 @@ The infrastructure is engineered for the maximum **Price-to-Performance** ratio 
 * **Storage:** **40 GB Standard HDD** per node, balancing capacity for OS stability and logging.
 * **Micro-Containers:** Both Frontend and Backend are built on **Alpine Linux** for ultra-small images (<100MB), enabling rapid scaling.
 
-
+---
 
 ### **🛡️ High Availability (HA) & Spot Resilience**
 * **2-Node Minimum:** Core services (**Frontend**, **Backend API**, and **PgCat**) run at least **2 replicas**.
