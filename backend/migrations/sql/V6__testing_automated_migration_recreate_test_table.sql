@@ -1,4 +1,4 @@
-create table public test
+create table public.test
 (
     ID BIGINT,
     col1 text
