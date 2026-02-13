@@ -35,7 +35,7 @@ RUN pip install --no-cache-dir /wheels/*
 COPY ./app .
 
 # Verification step (same as previous version)
-RUN ls -l ./app/static/samples/sample_us.dcm
+RUN ls -l ./static/samples/sample_us.dcm
 
 EXPOSE 8000
 
