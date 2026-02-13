@@ -19,7 +19,7 @@ spec:
                    -password=$(DB_PASSWORD) \
                    -baselineOnMigrate=true \
                    -baselineVersion=1 \
-                   migrate
+                   repair
         env:
           - name: DB_USER
             valueFrom: { secretKeyRef: { name: pacs-db-secrets, key: username } }
