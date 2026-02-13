@@ -32,7 +32,7 @@ COPY --from=builder /build/wheels /wheels
 RUN pip install --no-cache-dir /wheels/*
 
 # Copy application code
-COPY ./app ./app
+COPY ./app .
 
 # Verification step (same as previous version)
 RUN ls -l ./app/static/samples/sample_us.dcm
