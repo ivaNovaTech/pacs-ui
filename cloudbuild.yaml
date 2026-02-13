@@ -14,7 +14,7 @@ steps:
         docker push ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-backend:${SHORT_SHA}
         docker push ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-ui:${SHORT_SHA}
 
-  # 2. Database Migration with Race Condition Protection
+  # 2. Database Migration
   - name: 'gcr.io/cloud-builders/gcloud'
     id: 'Migrate DB'
     entrypoint: 'bash'
@@ -24,23 +24,20 @@ steps:
         gcloud components install gke-gcloud-auth-plugin --quiet
         gcloud container clusters get-credentials ${_CLUSTER_NAME} --zone ${_REGION} --project ${PROJECT_ID}
         
-        # Cleanup old job to avoid "Job already exists" errors
         kubectl delete job pacs-migration-job --ignore-not-found
         
-        # Prepare and apply
         sed "s|image: .*pacs-migrations:.*|image: ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-migrations:${SHORT_SHA}|g" k8s/flyway-job.yaml > flyway-run.yaml
         kubectl apply -f flyway-run.yaml
         
         echo "Waiting for migration to complete..."
-        # If the migration is super fast, 'wait' might fail because it's already done.
-        # We catch that failure and check the status manually.
+        # Notice the double $$ below to tell Cloud Build "this is a bash variable"
         if ! kubectl wait --for=condition=complete job/pacs-migration-job --timeout=180s; then
-          STATUS=$(kubectl get job pacs-migration-job -o jsonpath='{.status.succeeded}')
-          if [ "$STATUS" == "1" ]; then
-            echo "Migration already succeeded before wait started. Proceeding to deploy..."
+          STATUS=$$(kubectl get job pacs-migration-job -o jsonpath='{.status.succeeded}')
+          if [ "$$STATUS" == "1" ]; then
+            echo "Migration already succeeded. Moving to deploy..."
             exit 0
           else
-            echo "MIGRATION FAILED or TIMED OUT! Fetching logs..."
+            echo "MIGRATION FAILED! Fetching logs..."
             kubectl logs -l job-name=pacs-migration-job -c flyway
             exit 1
           fi
@@ -50,7 +47,7 @@ steps:
       - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER_NAME}'
       - 'USE_GKE_GCLOUD_AUTH_PLUGIN=True'
 
-  # 3. Deploy Updates (Only runs if Migration Step succeeded)
+  # 3. Deploy Updates
   - name: 'gcr.io/cloud-builders/gcloud'
     id: 'Deploy Updates'
     entrypoint: 'bash'
