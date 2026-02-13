@@ -1,22 +1,20 @@
 steps:
-  # Step 1: Build & Push All Three Images
+  # 1. Build and Push (Standard Steps)
   - name: 'gcr.io/cloud-builders/docker'
-    id: 'Build & Push DB, Backend, and Frontend'
+    id: 'Build & Push All'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        # Build Migration, Backend, and Frontend
         docker build -t ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-migrations:${SHORT_SHA} -f backend/migrations/Dockerfile.flyway backend/.
         docker build -t ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-backend:${SHORT_SHA} backend/.
         docker build -t ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-ui:${SHORT_SHA} frontend/.
         
-        # Push all to Artifact Registry
         docker push ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-migrations:${SHORT_SHA}
         docker push ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-backend:${SHORT_SHA}
         docker push ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-ui:${SHORT_SHA}
 
-  # Step 2: Database Migration (Verified Step)
+  # 2. Database Migration with WAIT
   - name: 'gcr.io/cloud-builders/gcloud'
     id: 'Migrate DB'
     entrypoint: 'bash'
@@ -25,15 +23,28 @@ steps:
       - |
         gcloud components install gke-gcloud-auth-plugin --quiet
         gcloud container clusters get-credentials ${_CLUSTER_NAME} --zone ${_REGION} --project ${PROJECT_ID}
-        sed "s|image: .*pacs-migrations:.*|image: ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-migrations:${SHORT_SHA}|g" k8s/flyway-job.yaml > flyway-run.yaml
+        
+        # Cleanup old job
         kubectl delete job pacs-migration-job --ignore-not-found
+        
+        # Prepare and apply
+        sed "s|image: .*pacs-migrations:.*|image: ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-migrations:${SHORT_SHA}|g" k8s/flyway-job.yaml > flyway-run.yaml
         kubectl apply -f flyway-run.yaml
+        
+        # WAIT for the job to finish. 
+        # If it fails, this command exits with code 1, stopping the build.
+        echo "Waiting for migration to complete..."
+        if ! kubectl wait --for=condition=complete job/pacs-migration-job --timeout=180s; then
+          echo "MIGRATION FAILED! Fetching logs..."
+          kubectl logs -l job-name=pacs-migration-job -c flyway
+          exit 1
+        fi
     env:
       - 'CLOUDSDK_COMPUTE_ZONE=${_REGION}'
       - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER_NAME}'
       - 'USE_GKE_GCLOUD_AUTH_PLUGIN=True'
 
-  # Step 3: Zero-Downtime Deployment
+  # 3. Deploy Updates (Only runs if Migration Step succeeded)
   - name: 'gcr.io/cloud-builders/gcloud'
     id: 'Deploy Updates'
     entrypoint: 'bash'
@@ -41,14 +52,8 @@ steps:
       - '-c'
       - |
         gcloud container clusters get-credentials ${_CLUSTER_NAME} --zone ${_REGION} --project ${PROJECT_ID}
-        
-        # Update Backend (Using container name: pacs-api)
         kubectl set image deployment/pacs-backend pacs-api=${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-backend:${SHORT_SHA}
-        
-        # Update Frontend (Using container name: pacs-ui)
         kubectl set image deployment/pacs-frontend pacs-ui=${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-ui:${SHORT_SHA}
-        
-        # Monitor the rollout
         kubectl rollout status deployment/pacs-backend
         kubectl rollout status deployment/pacs-frontend
     env:
