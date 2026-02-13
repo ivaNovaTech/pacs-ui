@@ -1,2 +1,6 @@
-drop table public.employees_test2;
+create table public.test2
+(
+    ID BIGINT,
+    col1 text
 
+);

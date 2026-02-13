@@ -25,7 +25,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         curl \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /backend
+WORKDIR /app
 
 # Copy ONLY the pre-compiled binary wheels from the builder stage
 COPY --from=builder /build/wheels /wheels

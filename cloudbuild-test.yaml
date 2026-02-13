@@ -44,4 +44,7 @@ steps:
     id: 'Test Build Frontend'
     args: ['build', '-t', 'test-ui', './frontend']
 
+options:
+  logging: CLOUD_LOGGING_ONLY
+
 # Note: We do NOT push images or touch GKE here.
