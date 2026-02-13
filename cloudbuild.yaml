@@ -1,47 +1,46 @@
 steps:
-  # 1. Build and Push Migration Image
+  # Step 1: Build the Migration Image
   - name: 'gcr.io/cloud-builders/docker'
-    id: 'Build Migration'
+    id: 'Build Migration Image'
     dir: 'backend'
-    args: ['build', '-t', '${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-migrations:${SHORT_SHA}', '-f', 'migrations/Dockerfile.flyway', '.']
-
-  # 2. Build and Push Backend API Image (Assuming you have a Dockerfile in backend/)
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'Build Backend'
-    dir: 'backend'
-    args: ['build', '-t', '${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-backend:${SHORT_SHA}', '.']
-
-  # 3. Push both images
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'Push Images'
-    entrypoint: 'bash'
     args:
-      - '-c'
-      - |
-        docker push ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-migrations:${SHORT_SHA}
-        docker push ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-backend:${SHORT_SHA}
+      - 'build'
+      - '-t'
+      - '${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-migrations:${SHORT_SHA}'
+      - '-f'
+      - 'migrations/Dockerfile.flyway'
+      - '.'
 
-  # 4. Run Database Migration
+  # Step 2: Push the image
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Push Image'
+    args:
+      - 'push'
+      - '${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-migrations:${SHORT_SHA}'
+
+  # Step 3: Run Migration (Authentication + Repair + Migrate)
   - name: 'gcr.io/cloud-builders/gcloud'
     id: 'Migrate DB'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        # Clean up old job and run new one
+        # A. Install mandatory auth plugin
+        gcloud components install gke-gcloud-auth-plugin --quiet
+        
+        # B. Connect to  cluster
+        gcloud container clusters get-credentials ${_CLUSTER_NAME} --zone ${_REGION} --project ${PROJECT_ID}
+        
+        # C. Update the YAML with the new image tag
+        sed "s|image: .*pacs-migrations:.*|image: ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-migrations:${SHORT_SHA}|g" k8s/flyway-job.yaml > flyway-run.yaml
+        
+        # D. Cleanup old job and apply new one
         kubectl delete job pacs-migration-job --ignore-not-found
-        sed "s|image: .*pacs-migrations:.*|image: ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-migrations:${SHORT_SHA}|g" k8s/flyway-job.yaml | kubectl apply -f -
+        kubectl apply -f flyway-run.yaml
     env:
       - 'CLOUDSDK_COMPUTE_ZONE=${_REGION}'
       - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER_NAME}'
-
-  # 5. Update the Backend Deployment
-  - name: 'gcr.io/cloud-builders/kubectl'
-    id: 'Deploy Backend'
-    args: ['set', 'image', 'deployment/pacs-backend-deployment', 'pacs-backend-container=${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-backend:${SHORT_SHA}']
-    env:
-      - 'CLOUDSDK_COMPUTE_ZONE=${_REGION}'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER_NAME}'
+      - 'USE_GKE_GCLOUD_AUTH_PLUGIN=True'
 
 substitutions:
   _REGION: us-central1-a
@@ -50,5 +49,5 @@ substitutions:
   _CLUSTER_NAME: mwakilishi-cluster
 
 options:
-  substitution_option: 'ALLOW_LOOSE'
   logging: CLOUD_LOGGING_ONLY
+  substitution_option: 'ALLOW_LOOSE'
