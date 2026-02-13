@@ -3,8 +3,11 @@ kind: Ingress
 metadata:
   name: pacs-api-ingress
   annotations:
-    ingress.gcp.kubernetes.io/pre-shared-cert: "mcrt-a8ef88d4-616a-4e30-a6a6-7e01435e5748"
+    # 1. This is the correct key for ManagedCertificate objects
+    networking.gke.io/managed-certificates: "pacs-ivanova-cert,apps-cert"
+    # 2. Your existing Static IP
     kubernetes.io/ingress.global-static-ip-name: "k8s2-fr-4pun04rj-default-pacs-api-ingress-dfn5968q"
+    # 3. Tells GKE to use the Google Cloud Load Balancer
     kubernetes.io/ingress.class: "gce"
 spec:
   rules:
@@ -35,95 +38,3 @@ spec:
             name: drupal-service
             port:
               number: 80
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: pacs-backend
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: pacs-backend
-  template:
-    metadata:
-      labels:
-        app: pacs-backend
-    spec:
-      affinity:
-        podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-              - key: app
-                operator: In
-                values:
-                - pacs-backend
-            topologyKey: "kubernetes.io/hostname"
-      containers:
-      - name: pacs-api
-        image: us-central1-docker.pkg.dev/mwakilishi-1770258957/pacs-repo/pacs-api:latest
-        ports:
-        - containerPort: 8000
-        env:
-        - name: DATABASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: cloudsql-db-credentials
-              key: database_url
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: pacs-frontend
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: pacs-frontend
-  template:
-    metadata:
-      labels:
-        app: pacs-frontend
-    spec:
-      affinity:
-        podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-              - key: app
-                operator: In
-                values:
-                - pacs-frontend
-            topologyKey: "kubernetes.io/hostname"
-      containers:
-      - name: pacs-ui
-        image: us-central1-docker.pkg.dev/mwakilishi-1770258957/pacs-repo/pacs-frontend:latest
-        ports:
-        - containerPort: 80
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: pacs-backend-service
-spec:
-  type: ClusterIP
-  selector:
-    app: pacs-backend
-  ports:
-    - protocol: TCP
-      port: 8000
-      targetPort: 8000
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: pacs-frontend-service
-spec:
-  type: ClusterIP
-  selector:
-    app: pacs-frontend
-  ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 80

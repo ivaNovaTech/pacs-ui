@@ -7,7 +7,12 @@ from fastapi.staticfiles import StaticFiles
 # Ensure 'health' is the filename created above
 from app.routes import patient, study, system, health
 
-app = FastAPI(title="IVANOVA API")
+app = FastAPI(
+    title="IvaNova PACS API",
+    root_path="",     
+    docs_url="/api/docs",      
+    openapi_url="/api/openapi.json"
+)
 
 app.add_middleware(
     CORSMiddleware,
