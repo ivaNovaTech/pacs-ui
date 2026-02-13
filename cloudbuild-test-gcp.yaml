@@ -45,7 +45,5 @@ steps:
     args: ['build', '-t', 'test-ui', './frontend']
 
 options:
- # This satisfies requirement service account
   logging: CLOUD_LOGGING_ONLY
-  # This helps local builds ignore things they don't understand
-  substitution_option: 'ALLOW_LOOSE'
+  
