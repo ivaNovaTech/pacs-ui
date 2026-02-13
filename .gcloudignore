@@ -1,0 +1,18 @@
+# Exclude the massive node_modules folders
+**/node_modules/
+
+# Exclude git history (Google doesn't need the whole .git folder to build)
+.git/
+
+# Exclude local environment files
+.env
+.env.*
+
+# Exclude OS-specific junk
+.DS_Store
+
+# Exclude the frontend folder entirely for the MIGRATION build
+# (We only need 'backend' and 'k8s')
+frontend/
+
+backend/app/static/*

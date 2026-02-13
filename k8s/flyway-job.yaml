@@ -1,0 +1,40 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pacs-migration-job
+spec:
+  template:
+    spec:
+      containers:
+      - name: flyway
+        image: us-central1-docker.pkg.dev/mwakilishi-1770258957/pacs-repo/pacs-migrations:latest
+        # This fixes the "Invalid flag: echo" error
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            echo "Waiting 15s for Cloud SQL Proxy..."
+            sleep 15
+            flyway -url=jdbc:postgresql://127.0.0.1:5432/pacs \
+                   -user=$(DB_USER) \
+                   -password=$(DB_PASSWORD) \
+                   -baselineOnMigrate=true \
+                   -baselineVersion=1 \
+                   migrate
+        env:
+          - name: DB_USER
+            valueFrom: { secretKeyRef: { name: pacs-db-secrets, key: username } }
+          - name: DB_PASSWORD
+            valueFrom: { secretKeyRef: { name: pacs-db-secrets, key: password } }
+
+      - name: cloud-sql-proxy
+        image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.21.0
+        args:
+          - "--port=5432"
+          - "$(DB_CONNECTION)"
+        env:
+          - name: DB_CONNECTION
+            valueFrom: { secretKeyRef: { name: pacs-db-secrets, key: connection_name } }
+      
+      restartPolicy: OnFailure
+  # Automatically clean up the job 10 minutes after it finishes
+  ttlSecondsAfterFinished: 600

@@ -1,0 +1,3 @@
+FROM flyway/flyway:10-alpine
+# Paths are relative to 'backend' now
+COPY migrations/sql/ /flyway/sql/

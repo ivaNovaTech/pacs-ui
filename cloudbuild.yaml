@@ -1,0 +1,54 @@
+steps:
+  # 1. Build and Push Migration Image
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Build Migration'
+    dir: 'backend'
+    args: ['build', '-t', '${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-migrations:${SHORT_SHA}', '-f', 'migrations/Dockerfile.flyway', '.']
+
+  # 2. Build and Push Backend API Image (Assuming you have a Dockerfile in backend/)
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Build Backend'
+    dir: 'backend'
+    args: ['build', '-t', '${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-backend:${SHORT_SHA}', '.']
+
+  # 3. Push both images
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Push Images'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        docker push ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-migrations:${SHORT_SHA}
+        docker push ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-backend:${SHORT_SHA}
+
+  # 4. Run Database Migration
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'Migrate DB'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        # Clean up old job and run new one
+        kubectl delete job pacs-migration-job --ignore-not-found
+        sed "s|image: .*pacs-migrations:.*|image: ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-migrations:${SHORT_SHA}|g" k8s/flyway-job.yaml | kubectl apply -f -
+    env:
+      - 'CLOUDSDK_COMPUTE_ZONE=${_REGION}'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER_NAME}'
+
+  # 5. Update the Backend Deployment
+  - name: 'gcr.io/cloud-builders/kubectl'
+    id: 'Deploy Backend'
+    args: ['set', 'image', 'deployment/pacs-backend-deployment', 'pacs-backend-container=${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-backend:${SHORT_SHA}']
+    env:
+      - 'CLOUDSDK_COMPUTE_ZONE=${_REGION}'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER_NAME}'
+
+substitutions:
+  _REGION: us-central1-a
+  _REGION_SHORT: us-central1
+  _REPO_NAME: pacs-repo
+  _CLUSTER_NAME: mwakilishi-cluster
+
+options:
+  substitution_option: 'ALLOW_LOOSE'
+  logging: CLOUD_LOGGING_ONLY
