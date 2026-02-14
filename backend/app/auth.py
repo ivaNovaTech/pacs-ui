@@ -4,7 +4,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Form
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
-import bcrypt  # <-- use bcrypt directly
+import bcrypt  
 from sqlalchemy.orm import Session
 
 from .db import get_db

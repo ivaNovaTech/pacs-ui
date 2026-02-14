@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, Text, TIMESTAMP, ForeignKey
-from app.database import Base
+from database import Base
 
 class Series(Base):
     __tablename__ = "series"

@@ -33,9 +33,9 @@ spec:
         ports:
         - containerPort: 80
         env:
-        - name: REACT_APP_API_URL
-          # Since this runs in the user's browser, it must point to the PUBLIC Ingress IP/Domain
-          value: "http://<YOUR_INGRESS_IP>/api" 
+        - name: BACKEND_URL
+          # Updated to match the service name we found with kubectl
+          value: "http://pacs-backend-service:8000"
 ---
 apiVersion: v1
 kind: Service

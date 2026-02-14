@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func, extract, or_, desc
-from app.database import get_db
-from app.models.study import Study
-from app.models.patient import Patient
+from database import get_db
+from models.study import Study
+from models.patient import Patient
 from typing import List, Optional, Any, Generic, TypeVar
 from pydantic import BaseModel
 

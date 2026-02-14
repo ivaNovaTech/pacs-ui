@@ -1,0 +1,45 @@
+server {
+    listen 80;
+    server_name localhost;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # 1. Handle API requests
+    location /api/ {
+        # Proxies to the URL defined in your Makefile
+        proxy_pass ${BACKEND_URL};
+        
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        
+        # $scheme automatically detects http vs https
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Standard behavior for local/prod compatibility
+        proxy_redirect off;
+    }
+
+    # 2. Fix MIME types for Javascript
+    location ~ \.js$ {
+        root /usr/share/nginx/html;
+        add_header Content-Type application/javascript;
+        try_files $uri =404;
+    }
+
+    # 3. Angular Routing (SPA fallback)
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # 4. Cache static assets
+    location ~* \.(?:ico|css|js|gif|jpe?g|png|svg|woff2?|eot|ttf|otf)$ {
+        expires 6M;
+        access_log off;
+        add_header Cache-Control "public";
+    }
+}
