@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 
 # Import your route modules
 # Ensure 'health' is the filename created above
-from app.routes import patient, study, system, health
+from routes import patient, study, system, health
 
 app = FastAPI(
     title="IvaNova PACS API",

@@ -1,71 +1,77 @@
 steps:
-  # 1. Build and Push Application and Database
+  # 1. Build and Push (Matches 'make backend' and 'make frontend' logic)
   - name: 'gcr.io/cloud-builders/docker'
-    id: 'Build & Push All'
+    id: 'Build & Push Images'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
+        # Build Migrations using the backend folder as context
         docker build -t ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-migrations:${SHORT_SHA} -f backend/migrations/Dockerfile.flyway backend/.
-        docker build -t ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-backend:${SHORT_SHA} backend/.
-        docker build -t ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-ui:${SHORT_SHA} frontend/.
         
+        # Build Backend using the backend folder as context
+        docker build -t ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-backend:${SHORT_SHA} -f backend/Dockerfile backend/.
+        
+        # Build Frontend using the frontend folder as context
+        docker build -t ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-ui:${SHORT_SHA} -f frontend/Dockerfile frontend/.
+        
+        # Create a local tag for the Smoke Test to use
+        docker tag ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-backend:${SHORT_SHA} test-backend
+
+        # Push all to Artifact Registry
         docker push ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-migrations:${SHORT_SHA}
         docker push ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-backend:${SHORT_SHA}
         docker push ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-ui:${SHORT_SHA}
 
-  # 2. Database Migration (Sidecar-Aware Logic)
-  - name: 'gcr.io/cloud-builders/gcloud'
-    id: 'Migrate DB'
+  # 2. Smoke Test Backend (Fixes the DATABASE_URL error)
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Smoke Test Backend'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        gcloud components install gke-gcloud-auth-plugin --quiet
+        # Pass a dummy DATABASE_URL so the safety check in database.py passes
+        docker run -d \
+          --name smoke-test-backend \
+          -e DATABASE_URL=postgresql://user:pass@localhost:5432/db \
+          test-backend
+        
+        sleep 5
+        docker logs smoke-test-backend
+        
+        if [ "$(docker inspect -f '{{.State.Running}}' smoke-test-backend)" = "false" ]; then
+          echo "❌ Backend crashed on startup!"
+          exit 1
+        fi
+        echo "✅ Backend started correctly."
+        docker stop smoke-test-backend
+
+  # 3. Database Migration
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'Run Migrations'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
         gcloud container clusters get-credentials ${_CLUSTER_NAME} --zone ${_REGION} --project ${PROJECT_ID}
-        
-        # Cleanup old job
         kubectl delete job pacs-migration-job --ignore-not-found
-        
-        # Apply the migration job
         sed "s|image: .*pacs-migrations:.*|image: ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-migrations:${SHORT_SHA}|g" k8s/flyway-job.yaml > flyway-run.yaml
         kubectl apply -f flyway-run.yaml
         
-        echo "Monitoring Flyway logs (ignoring sidecar status)..."
-        # Poll for 2 minutes
         for i in {1..24}; do
           LOGS=$$(kubectl logs -l job-name=pacs-migration-job -c flyway 2>/dev/null)
-          
-          # Check for successful application OR already up to date
           if echo "$$LOGS" | grep -qE "Successfully applied|is up to date"; then
-            echo "SUCCESS: Database is ready."
-            # Force delete the job to kill the Cloud SQL Proxy sidecar
+            echo "Migration Success."
             kubectl delete job pacs-migration-job
             exit 0
           fi
-          
-          # Check for errors
-          if echo "$$LOGS" | grep -q "Migration failed"; then
-            echo "ERROR: Flyway migration failed."
-            echo "$$LOGS"
-            exit 1
-          fi
-          
-          echo "Waiting for Flyway output... (attempt $$i/24)"
           sleep 5
         done
-
-        echo "ERROR: Timeout waiting for Flyway logs."
-        kubectl describe job pacs-migration-job
         exit 1
-    env:
-      - 'CLOUDSDK_COMPUTE_ZONE=${_REGION}'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER_NAME}'
-      - 'USE_GKE_GCLOUD_AUTH_PLUGIN=True'
 
-  # 3. Deploy Updates
+  # 4. GKE Rollout (pacs-api and pacs-ui are your container names)
   - name: 'gcr.io/cloud-builders/gcloud'
-    id: 'Deploy Updates'
+    id: 'GKE Rollout'
     entrypoint: 'bash'
     args:
       - '-c'
@@ -75,10 +81,6 @@ steps:
         kubectl set image deployment/pacs-frontend pacs-ui=${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-ui:${SHORT_SHA}
         kubectl rollout status deployment/pacs-backend
         kubectl rollout status deployment/pacs-frontend
-    env:
-      - 'CLOUDSDK_COMPUTE_ZONE=${_REGION}'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER_NAME}'
-      - 'USE_GKE_GCLOUD_AUTH_PLUGIN=True'
 
 substitutions:
   _REGION: us-central1-a

@@ -1,16 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List
-from app.database import get_db
-from app.models.patient import Patient
-from app.models.study import Study
-from app.models.series import Series
-from app.models.image import Image
-from app.schemas.patient import PatientOut
-from app.schemas.study import StudyOut
-from app.schemas.series import SeriesOut
-from app.schemas.image import ImageOut
-from app.schemas.pagination import PaginatedResponse
+from database import get_db
+from models.patient import Patient
+from models.study import Study
+from models.series import Series
+from models.image import Image
+from schemas.patient import PatientOut
+from schemas.study import StudyOut
+from schemas.series import SeriesOut
+from schemas.image import ImageOut
+from schemas.pagination import PaginatedResponse
 from sqlalchemy import func, cast, String  
 
 router = APIRouter(prefix="/patients", tags=["patients"])

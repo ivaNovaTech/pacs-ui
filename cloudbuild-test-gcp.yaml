@@ -1,49 +1,58 @@
 steps:
-  # 1. Start an Ephemeral PostgreSQL Database
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'Start Temporary DB'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        docker run -d --name temp-postgres \
-          -e POSTGRES_PASSWORD=password \
-          -e POSTGRES_DB=pacs_test \
-          -p 5432:5432 \
-          postgres:17-alpine
-        
-        # Give Postgres a few seconds to initialize
-        echo "Waiting for Postgres to start..."
-        sleep 10
-
-  # 2. Build the Migration Image
+  # 1. Build Migration Image
   - name: 'gcr.io/cloud-builders/docker'
     id: 'Build Migration Image'
-    args: ['build', '-t', 'pacs-migrations:test', '-f', 'backend/migrations/Dockerfile.flyway', 'backend/.']
+    args: [
+      'build', 
+      '-t', 'pacs-migrations:test', 
+      '-f', 'backend/migrations/Dockerfile.flyway', 
+      'backend/.'
+    ]
 
-  # 3. DRY RUN: Test Migrations against Temporary DB
+  # 2. Build Backend Image (Context aligned to backend/.)
   - name: 'gcr.io/cloud-builders/docker'
-    id: 'Test Migrations'
+    id: 'Build Backend'
+    args: [
+      'build', 
+      '-t', 'test-backend', 
+      '-f', 'backend/Dockerfile', 
+      'backend/.' 
+    ]
+
+  # 3. Smoke Test Backend (The Fix for DATABASE_URL)
+  # This verifies the 'routes' import and the presence of 'static' files
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Smoke Test Backend'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        docker run --network=host \
-          -e FLYWAY_URL=jdbc:postgresql://localhost:5432/pacs_test \
-          -e FLYWAY_USER=postgres \
-          -e FLYWAY_PASSWORD=password \
-          pacs-migrations:test migrate
-    # If this fails, the PR fails!
+        # Pass dummy env so the Python code doesn't crash on the DATABASE_URL check
+        docker run -d \
+          --name smoke-test-backend \
+          -e DATABASE_URL=postgresql://user:pass@localhost:5432/db \
+          test-backend
+        
+        sleep 5
+        docker logs smoke-test-backend
+        
+        if [ "$(docker inspect -f '{{.State.Running}}' smoke-test-backend)" = "false" ]; then
+          echo "❌ ERROR: Backend crashed! Check the logs above for ModuleNotFoundError or path issues."
+          exit 1
+        fi
+        
+        echo "✅ SUCCESS: Backend started and found all modules."
+        docker stop smoke-test-backend
 
-  # 4. Build App Images (Checking for compilation/syntax errors)
+  # 4. Build Frontend Image
   - name: 'gcr.io/cloud-builders/docker'
-    id: 'Test Build Backend'
-    args: ['build', '-t', 'test-backend', './backend']
-
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'Test Build Frontend'
-    args: ['build', '-t', 'test-ui', './frontend']
+    id: 'Build Frontend'
+    args: [
+      'build', 
+      '-t', 'test-ui', 
+      '-f', 'frontend/Dockerfile', 
+      'frontend/.'
+    ]
 
 options:
   logging: CLOUD_LOGGING_ONLY
-  

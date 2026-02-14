@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, Text, TIMESTAMP, ForeignKey
-from app.database import Base # Fixed: was pointing to ..db
+from database import Base # Fixed: was pointing to ..db
 
 class Image(Base):
     __tablename__ = "image"

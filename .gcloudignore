@@ -13,6 +13,3 @@
 
 # Exclude the frontend folder entirely for the MIGRATION build
 # (We only need 'backend' and 'k8s')
-frontend/
-
-backend/app/static/*
