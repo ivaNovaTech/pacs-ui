@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, Text, TIMESTAMP, ForeignKey
+from sqlalchemy import Column, Integer, Text, ForeignKey, TIMESTAMP
 from database import Base
 
 class Series(Base):
@@ -13,5 +13,5 @@ class Series(Base):
     body_part_examined = Column(Text)
     description = Column(Text)
     study_year = Column(Integer)
-    created_at = Column(TIMESTAMP)
-    last_updated_at = Column(TIMESTAMP)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False)
+    last_updated_at = Column(TIMESTAMP(timezone=True), nullable=False)

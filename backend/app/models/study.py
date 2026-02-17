@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, Text, Date, TIMESTAMP, ForeignKey
+from sqlalchemy import Column, Integer, Text, Date, ForeignKey, TIMESTAMP
 from database import Base
 
 class Study(Base):
@@ -13,5 +13,5 @@ class Study(Base):
     study_year = Column(Integer)
     modality = Column(Text, nullable=False)
     description = Column(Text, nullable=False)
-    created_at = Column(TIMESTAMP)
-    last_updated_at = Column(TIMESTAMP)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False)
+    last_updated_at = Column(TIMESTAMP(timezone=True), nullable=False)

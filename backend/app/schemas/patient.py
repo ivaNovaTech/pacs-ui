@@ -12,7 +12,7 @@ class PatientOut(BaseModel):
     date_of_birth: date
     suffix: Optional[str] = None
     prefix: Optional[str] = None
-    created_at: Optional[datetime] = None
-    last_updated_at: Optional[datetime] = None
+    created_at: datetime
+    last_updated_at: datetime
    
     model_config = ConfigDict(from_attributes=True)

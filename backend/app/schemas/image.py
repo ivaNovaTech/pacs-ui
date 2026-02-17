@@ -7,7 +7,7 @@ class ImageBase(BaseModel):
     study_id: Optional[int] = None
     image_uid: str
     instance_number: Optional[int] = None
-    image_position: Optional[int] = None
+    image_position: Optional[str] = None
     rows: Optional[int] = None
     columns: Optional[int] = None
     transfer_syntax_uid: str
@@ -20,8 +20,8 @@ class ImageOut(ImageBase):
     patient_name: Optional[str] = None
     mrn: Optional[str] = None
     accn_num: Optional[str] = None
-    #created_at: Optional[datetime] = None
-    #last_updated_at: Optional[datetime] = None
+    #created_at: datetime] 
+    #last_updated_at: datetime
 
     class Config:
         from_attributes = True
