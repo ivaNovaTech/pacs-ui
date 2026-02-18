@@ -1,18 +1,29 @@
 services:
-  backend:
-    build: ./backend
-    container_name: pacs_backend
+  db:
+    image: postgres:17-alpine
+    container_name: pacs_testdb
     environment:
-      # This variable name must match what your FastAPI code looks for
-      DATABASE_URL: ${DATABASE_URL_LOCAL} 
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: pacs
     ports:
-      - "8000:8000"
-    # This helps the container resolve the host's network
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - "5435:5432"
 
-  frontend:
-    build: ./frontend
-    container_name: pacs_frontend
+  pacs-backend-service:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@db:5432/pacs
+    depends_on:
+      - db
+
+  pacs-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     ports:
       - "80:80"
+    environment:
+      - BACKEND_URL=http://pacs-backend-service:8000
+    depends_on:
+      - pacs-backend-service

@@ -20,6 +20,8 @@ class ImageOut(ImageBase):
     patient_name: Optional[str] = None
     mrn: Optional[str] = None
     accn_num: Optional[str] = None
+    study_date: datetime
+    description: Optional[str] = None
     #created_at: datetime] 
     #last_updated_at: datetime
 
