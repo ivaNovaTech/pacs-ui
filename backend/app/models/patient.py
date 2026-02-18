@@ -13,5 +13,5 @@ class Patient(Base):
     date_of_birth = Column(Date, nullable=False)
     suffix = Column(Text)
     prefix = Column(Text)
-    created_at = Column(TIMESTAMP)
-    last_updated_at = Column(TIMESTAMP)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False)
+    last_updated_at = Column(TIMESTAMP(timezone=True), nullable=False)

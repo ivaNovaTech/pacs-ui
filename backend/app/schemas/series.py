@@ -13,8 +13,8 @@ class SeriesBase(BaseModel):
 
 class SeriesOut(SeriesBase):
     id: int
-    created_at: Optional[datetime] = None
-    last_updated_at: Optional[datetime] = None
+    created_at: datetime
+    last_updated_at: datetime
 
     class Config:
         from_attributes = True

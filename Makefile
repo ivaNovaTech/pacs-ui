@@ -13,8 +13,8 @@ FLYWAY_URL=jdbc:postgresql://host.docker.internal:5435/pacs
 # Start the local test database
 db:
 	@echo "🐘 Starting Postgres..."
-	-docker rm -f temp-postgres 2>/dev/null
-	docker run -d --name temp-postgres \
+	-docker rm -f postgres-testdb 2>/dev/null
+	docker run -d --name pacs_testdb \
 		-e POSTGRES_PASSWORD=password \
 		-e POSTGRES_DB=pacs \
 		-p 5435:5432 \
@@ -25,8 +25,12 @@ db:
 # Run Flyway migrations
 migrate:
 	@echo "🚀 Running Migrations..."
+	# 1. Build using the specific tag
 	docker build -t pacs-migrations:test -f backend/migrations/Dockerfile.flyway backend/
+	
+	# 2. Run using that same tag
 	docker run --rm \
+		--add-host=host.docker.internal:host-gateway \
 		-e FLYWAY_URL=$(FLYWAY_URL) \
 		-e FLYWAY_USER=postgres \
 		-e FLYWAY_PASSWORD=password \
@@ -47,13 +51,13 @@ sync-localdb:
 	@echo "📡 Pulling data from $(LOCAL_DB_HOST)..."
 	PGPASSWORD=$(LOCAL_DB_PASSWORD) pg_dump -h $(LOCAL_DB_HOST) -p 5432 -U $(LOCAL_DB_USER) -d pacs \
 		--clean --if-exists --no-owner --no-privileges --no-publications --no-subscriptions | \
-	docker exec -i temp-postgres psql -U postgres -d pacs
+	docker exec -i pacs_testdb psql -U postgres -d pacs
 	@echo "✅ Data Synced!"
 
 # Left alone - Data is now correct at source
 fix-columns:
 	@echo "🔧 Checking data alignment..."
-	-docker exec -it temp-postgres psql -U postgres -d pacs
+	-docker exec -it pacs_testdb psql -U postgres -d pacs
 
 # The "One-Touch" Developer Setup
 dev-setup: db sync-localdb fix-columns
@@ -79,5 +83,5 @@ run-frontend:
 
 # Cleanup
 clean:
-	docker stop temp-postgres running-backend running-ui || true
-	docker rm temp-postgres running-backend running-ui || true
+	docker stop pacs_testdb running-backend running-ui || true
+	docker rm pacs_testdb running-backend running-ui || true
