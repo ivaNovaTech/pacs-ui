@@ -17,8 +17,6 @@ spec:
             flyway -url=jdbc:postgresql://127.0.0.1:5432/pacs \
                    -user=$(DB_USER) \
                    -password=$(DB_PASSWORD) \
-                   -baselineOnMigrate=true \
-                   -baselineVersion=1 \
                    migrate
         env:
           - name: DB_USER
