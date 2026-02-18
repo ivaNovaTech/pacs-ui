@@ -77,10 +77,14 @@ steps:
       - '-c'
       - |
         gcloud container clusters get-credentials ${_CLUSTER_NAME} --zone ${_REGION} --project ${PROJECT_ID}
-        kubectl set image deployment/pacs-backend pacs-api=${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-backend:${SHORT_SHA}
-        kubectl set image deployment/pacs-frontend pacs-ui=${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-ui:${SHORT_SHA}
-        kubectl rollout status deployment/pacs-backend
-        kubectl rollout status deployment/pacs-frontend
+        
+        # Update images for StatefulSets
+        kubectl set image statefulset/pacs-backend pacs-api=${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-backend:${SHORT_SHA}
+        kubectl set image statefulset/pacs-frontend pacs-ui=${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-ui:${SHORT_SHA}
+
+        # Monitor the rollout status for StatefulSets
+        kubectl rollout status statefulset/pacs-backend
+        kubectl rollout status statefulset/pacs-frontend
 
 substitutions:
   _REGION: us-central1-a
