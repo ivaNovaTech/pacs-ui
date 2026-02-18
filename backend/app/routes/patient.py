@@ -67,7 +67,7 @@ def get_patient_studies(patient_id: int, db: Session = Depends(get_db)):
 def get_patient_series(patient_id: int, study_id: int, db: Session = Depends(get_db)):
     return db.query(Series).filter(Series.study_id == study_id).all()
 
-#get sutudies, series, and images belongin to a particular patient
+#get sutudies, series, and images belonging to a particular patient
 @router.get("/{patient_id}/studies/{study_id}/series/{series_id}/images", response_model=List[ImageOut])
 def get_patient_images(patient_id: int, study_id: int, series_id: int, db: Session = Depends(get_db)):
     # PostgreSQL Concatenation: Last^First^Middle
@@ -94,10 +94,13 @@ def get_patient_images(patient_id: int, study_id: int, series_id: int, db: Sessi
         Image.modality,
         Image.image_url,
         patient_name,
-        # Image.created_at,
-        # Image.last_updated_at,         
+        Study.study_date.label("study_date"),
+        Study.description.label("description"),
+        Series.series_uid.label("series_uid"),    
         Patient.mrn.label("mrn"),    
         Study.accn_num.label("accn_num")
+        #Image.created_at,
+        #Image.last_updated_at,     
     ).join(Series, Image.series_id == Series.id) \
      .join(Study, Series.study_id == Study.id) \
      .join(Patient, Study.patient_id == Patient.id) \

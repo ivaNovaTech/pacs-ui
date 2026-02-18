@@ -27,11 +27,15 @@ import * as dcmjs from 'dcmjs';
 
         <div class="top-right text-end">
           <p class="dicom-source">
-            <strong>STUDY YEAR:</strong> {{ images[currentIndex]?.study_year }}
+            <strong>STUDY DATE:</strong> {{ images[currentIndex]?.study_date }}
             <i class="bi bi-file-earmark-medical ms-1"></i>
           </p>
           <p class="db-source">
             <strong>ACCESSION:</strong> {{ images[currentIndex]?.accn_num }} 
+            <i class="bi bi-database-fill ms-1"></i>
+          </p>
+           <p class="db-source">
+            <strong>STUDY DESC:</strong> {{ images[currentIndex]?.description }} 
             <i class="bi bi-database-fill ms-1"></i>
           </p>
         </div>
