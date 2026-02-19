@@ -4,47 +4,57 @@ ifneq ("$(wildcard .env)","")
     export $(shell sed 's/=.*//' .env)
 endif
 
-# Variables
-DB_URL=postgresql://postgres:password@host.docker.internal:5435/pacs
-FLYWAY_URL=jdbc:postgresql://host.docker.internal:5435/pacs
+.PHONY: up down db migrate backend frontend sync-localdb fix-columns dev-setup clean
 
-.PHONY: db migrate backend frontend test clean deploy sync-localdb fix-columns run-backend run-frontend dev-setup
+# --- DOCKER COMPOSE COMMANDS ---
 
-# Start the local test database
+# Start everything (DB, Backend, Frontend) in the background
+up:
+	@echo "🧹 Cleaning up old container conflicts..."
+	-docker rm -f pacs_testdb 2>/dev/null
+	@echo "🚀 Starting full stack with Docker Compose..."
+	docker compose up -d --build
+	@echo "\n✅ Stack is running:"
+	@$(MAKE) status
+
+# Stop and remove all containers
+down:
+	@echo "🛑 Stopping all services..."
+	docker compose down
+
+# Show status of project containers
+status:
+	@echo "📊 Project Status:"
+	docker compose ps
+
+# View logs for everything
+logs:
+	docker compose logs -f
+
+# Real-time resource usage
+stats:
+	docker stats --no-stream
+
+# --- TARGETED COMMANDS ---
+
+# Start only the database (useful for sync-localdb)
 db:
 	@echo "🐘 Starting Postgres..."
-	-docker rm -f postgres-testdb 2>/dev/null
-	docker run -d --name pacs_testdb \
-		-e POSTGRES_PASSWORD=password \
-		-e POSTGRES_DB=pacs \
-		-p 5435:5432 \
-		postgres:17-alpine
-	@echo "Waiting for DB..."
-	@sleep 5
+	docker compose up -d db
+	@until docker exec pacs_testdb pg_isready -U postgres; do sleep 1; done
+	@echo "✅ DB is ready."
 
-# Run Flyway migrations
+# Run Flyway migrations using the compose network
 migrate:
 	@echo "🚀 Running Migrations..."
-	# 1. Build using the specific tag
 	docker build -t pacs-migrations:test -f backend/migrations/Dockerfile.flyway backend/
-	
-	# 2. Run using that same tag
+	# We run this on the compose network so it can find 'db:5432'
 	docker run --rm \
-		--add-host=host.docker.internal:host-gateway \
-		-e FLYWAY_URL=$(FLYWAY_URL) \
+		--network $(shell basename $(CURDIR))_default \
+		-e FLYWAY_URL=jdbc:postgresql://db:5432/pacs \
 		-e FLYWAY_USER=postgres \
 		-e FLYWAY_PASSWORD=password \
 		pacs-migrations:test migrate
-
-# Build only the Backend
-backend:
-	@echo "📦 Building Backend..."
-	docker build -t test-backend -f backend/Dockerfile backend/
-
-# Build only the Frontend
-frontend:
-	@echo "🎨 Building Frontend..."
-	docker build -t test-ui ./frontend
 
 # Sync data from the physical local server (10.10.10.220)
 sync-localdb:
@@ -54,34 +64,23 @@ sync-localdb:
 	docker exec -i pacs_testdb psql -U postgres -d pacs
 	@echo "✅ Data Synced!"
 
-# Left alone - Data is now correct at source
+# Data verification
 fix-columns:
 	@echo "🔧 Checking data alignment..."
 	-docker exec -it pacs_testdb psql -U postgres -d pacs
 
 # The "One-Touch" Developer Setup
 dev-setup: db sync-localdb fix-columns
-	@echo "🚀 SUCCESS: DB is ready. Run 'make run-backend' then 'make run-frontend'"
+	@echo "🚀 SUCCESS: DB is ready. Run 'make up' to start the application."
 
-# Run Backend
+# Individual service runs (useful for debugging)
 run-backend:
-	docker run --rm -it \
-		--name running-backend \
-		-p 8000:8000 \
-		--add-host=host.docker.internal:host-gateway \
-		-e DATABASE_URL=$(DB_URL) \
-		test-backend
+	docker compose up --build pacs-backend-service
 
-# Run Frontend - NO trailing slash on BACKEND_URL
 run-frontend:
-	docker run --rm -it \
-		--name running-ui \
-		-p 80:80 \
-		--add-host=host.docker.internal:host-gateway \
-		-e BACKEND_URL=http://host.docker.internal:8000 \
-		test-ui
+	docker compose up --build pacs-frontend
 
-# Cleanup
+# Cleanup everything including volumes (fresh start)
 clean:
-	docker stop pacs_testdb running-backend running-ui || true
-	docker rm pacs_testdb running-backend running-ui || true
+	docker compose down -v
+	docker system prune -f --volumes

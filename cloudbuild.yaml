@@ -85,6 +85,9 @@ steps:
         kubectl rollout status statefulset/pacs-backend
         kubectl rollout status statefulset/pacs-frontend
 
+        # To fix 502 issues
+        kubectl rollout restart statefulset/pacs-frontend
+
 substitutions:
   _REGION: us-central1-a
   _REGION_SHORT: us-central1
