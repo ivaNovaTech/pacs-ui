@@ -1,82 +1,58 @@
 steps:
-  # 1. Build Migration Image
+  # 1. Build Migration Image (Validation only)
   - name: 'gcr.io/cloud-builders/docker'
-    id: 'Build Migration Image'
+    id: 'Validate Migration Build'
     args: [
       'build', 
-      '-t', '${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-migrations:${SHORT_SHA}', 
+      '-t', 'pacs-migrations:test', 
       '-f', 'backend/migrations/Dockerfile.flyway', 
       'backend/.'
     ]
 
-  # 2. Build Backend Image (Flattened structure fix)
+  # 2. Build Backend Image (Validation only)
   - name: 'gcr.io/cloud-builders/docker'
-    id: 'Build Backend'
+    id: 'Validate Backend Build'
     args: [
       'build', 
-      '-t', 'test-backend', # Tagged locally for the Smoke Test
-      '-t', '${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-backend:${SHORT_SHA}', 
+      '-t', 'pacs-backend:test', 
       '-f', 'backend/Dockerfile', 
       'backend/.' 
     ]
 
-  # 3. Smoke Test Backend
+  # 3. Smoke Test Backend (The Core Validation)
   - name: 'gcr.io/cloud-builders/docker'
     id: 'Smoke Test Backend'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
+        # Run the container locally to ensure it starts without errors
         docker run -d \
           --name smoke-test-backend \
           -e DATABASE_URL=postgresql://user:pass@localhost:5432/db \
-          test-backend
+          pacs-backend:test
+        
         sleep 5
+        docker logs smoke-test-backend
+        
+        # Check if the container stayed alive
         if [ "$(docker inspect -f '{{.State.Running}}' smoke-test-backend)" = "false" ]; then
-          docker logs smoke-test-backend
+          echo "❌ ERROR: Backend crashed on startup! Check imports and paths."
           exit 1
         fi
+        
+        echo "✅ SUCCESS: Backend started and is healthy."
         docker stop smoke-test-backend
 
-  # 4. Build Frontend Image
+  # 4. Build Frontend Image (Validation only)
   - name: 'gcr.io/cloud-builders/docker'
-    id: 'Build Frontend'
+    id: 'Validate Frontend Build'
     args: [
       'build', 
-      '-t', '${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-ui:${SHORT_SHA}', 
+      '-t', 'pacs-ui:test', 
       '-f', 'frontend/Dockerfile', 
       'frontend/.'
     ]
-
-  # 5. Push to Artifact Registry
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'Push Images'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        docker push ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-migrations:${SHORT_SHA}
-        docker push ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-backend:${SHORT_SHA}
-        docker push ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-ui:${SHORT_SHA}
-
-  # 6. GKE Rollout 
-  - name: 'gcr.io/cloud-builders/gcloud'
-    id: 'GKE Rollout'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        gcloud container clusters get-credentials ${_CLUSTER_NAME} --zone ${_REGION} --project ${PROJECT_ID}
-        kubectl set image statefulset/pacs-backend backend=${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-backend:${SHORT_SHA}
-        kubectl set image statefulset/pacs-frontend frontend=${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-ui:${SHORT_SHA}
-        kubectl rollout status statefulset/pacs-backend
-        kubectl rollout status statefulset/pacs-frontend
-
-substitutions:
-  _REGION: us-central1-a
-  _REGION_SHORT: us-central1
-  _REPO_NAME: pacs-repo
-  _CLUSTER_NAME: mwakilishi-cluster
 
 options:
   logging: CLOUD_LOGGING_ONLY
