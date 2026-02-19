@@ -23,17 +23,18 @@ WORKDIR /app
 COPY --from=builder /build/wheels /wheels
 RUN pip install --no-cache-dir /wheels/*
 
-# Copy all backend files
-COPY . .
+# --- THE FIX ---
+# Instead of copying the whole backend folder, 
+# copy ONLY the contents of your 'app' folder into '/app'
+COPY ./app /app
 
-# Set PYTHONPATH so 'from routes import ...' works within the app package
-# This solves the ModuleNotFoundError for good.
-ENV PYTHONPATH=/app/app:/app
+# Set PYTHONPATH to the root /app so imports like 'from routes import ...' work
+ENV PYTHONPATH=/app
 
-# Verification step for static files
-RUN ls -l ./app/static/samples/sample_us.dcm
+# This will now be: /app/static/samples/sample_us.dcm
+RUN ls -l /app/static/samples/sample_us.dcm
 
 EXPOSE 8000
 
-# Run uvicorn using the module path
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Since we flattened the structure, main.py is now in the root /app
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -4,44 +4,38 @@ steps:
     id: 'Build Migration Image'
     args: [
       'build', 
-      '-t', 'pacs-migrations:test', 
+      '-t', '${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-migrations:${SHORT_SHA}', 
       '-f', 'backend/migrations/Dockerfile.flyway', 
       'backend/.'
     ]
 
-  # 2. Build Backend Image (Context aligned to backend/.)
+  # 2. Build Backend Image (Flattened structure fix)
   - name: 'gcr.io/cloud-builders/docker'
     id: 'Build Backend'
     args: [
       'build', 
-      '-t', 'test-backend', 
+      '-t', 'test-backend', # Tagged locally for the Smoke Test
+      '-t', '${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-backend:${SHORT_SHA}', 
       '-f', 'backend/Dockerfile', 
       'backend/.' 
     ]
 
-  # 3. Smoke Test Backend (The Fix for DATABASE_URL)
-  # This verifies the 'routes' import and the presence of 'static' files
+  # 3. Smoke Test Backend
   - name: 'gcr.io/cloud-builders/docker'
     id: 'Smoke Test Backend'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        # Pass dummy env so the Python code doesn't crash on the DATABASE_URL check
         docker run -d \
           --name smoke-test-backend \
           -e DATABASE_URL=postgresql://user:pass@localhost:5432/db \
           test-backend
-        
         sleep 5
-        docker logs smoke-test-backend
-        
         if [ "$(docker inspect -f '{{.State.Running}}' smoke-test-backend)" = "false" ]; then
-          echo "❌ ERROR: Backend crashed! Check the logs above for ModuleNotFoundError or path issues."
+          docker logs smoke-test-backend
           exit 1
         fi
-        
-        echo "✅ SUCCESS: Backend started and found all modules."
         docker stop smoke-test-backend
 
   # 4. Build Frontend Image
@@ -49,10 +43,40 @@ steps:
     id: 'Build Frontend'
     args: [
       'build', 
-      '-t', 'test-ui', 
+      '-t', '${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-ui:${SHORT_SHA}', 
       '-f', 'frontend/Dockerfile', 
       'frontend/.'
     ]
+
+  # 5. Push to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Push Images'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        docker push ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-migrations:${SHORT_SHA}
+        docker push ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-backend:${SHORT_SHA}
+        docker push ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-ui:${SHORT_SHA}
+
+  # 6. GKE Rollout 
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'GKE Rollout'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud container clusters get-credentials ${_CLUSTER_NAME} --zone ${_REGION} --project ${PROJECT_ID}
+        kubectl set image statefulset/pacs-backend backend=${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-backend:${SHORT_SHA}
+        kubectl set image statefulset/pacs-frontend frontend=${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-ui:${SHORT_SHA}
+        kubectl rollout status statefulset/pacs-backend
+        kubectl rollout status statefulset/pacs-frontend
+
+substitutions:
+  _REGION: us-central1-a
+  _REGION_SHORT: us-central1
+  _REPO_NAME: pacs-repo
+  _CLUSTER_NAME: mwakilishi-cluster
 
 options:
   logging: CLOUD_LOGGING_ONLY

@@ -1,21 +1,21 @@
 steps:
-  # 1. Build and Push (Matches 'make backend' and 'make frontend' logic)
+  # 1. Build and Push
   - name: 'gcr.io/cloud-builders/docker'
     id: 'Build & Push Images'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        # Build Migrations using the backend folder as context
+        # Build Migrations
         docker build -t ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-migrations:${SHORT_SHA} -f backend/migrations/Dockerfile.flyway backend/.
         
-        # Build Backend using the backend folder as context
+        # Build Backend 
         docker build -t ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-backend:${SHORT_SHA} -f backend/Dockerfile backend/.
         
-        # Build Frontend using the frontend folder as context
+        # Build Frontend
         docker build -t ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-ui:${SHORT_SHA} -f frontend/Dockerfile frontend/.
         
-        # Create a local tag for the Smoke Test to use
+        # Create a local tag for the Smoke Test
         docker tag ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-backend:${SHORT_SHA} test-backend
 
         # Push all to Artifact Registry
@@ -23,14 +23,13 @@ steps:
         docker push ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-backend:${SHORT_SHA}
         docker push ${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-ui:${SHORT_SHA}
 
-  # 2. Smoke Test Backend (Fixes the DATABASE_URL error)
+  # 2. Smoke Test Backend
   - name: 'gcr.io/cloud-builders/docker'
     id: 'Smoke Test Backend'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        # Pass a dummy DATABASE_URL so the safety check in database.py passes
         docker run -d \
           --name smoke-test-backend \
           -e DATABASE_URL=postgresql://user:pass@localhost:5432/db \
@@ -69,7 +68,7 @@ steps:
         done
         exit 1
 
-  # 4. GKE Rollout (pacs-api and pacs-ui are your container names)
+  # 4. GKE Rollout 
   - name: 'gcr.io/cloud-builders/gcloud'
     id: 'GKE Rollout'
     entrypoint: 'bash'
@@ -78,11 +77,11 @@ steps:
       - |
         gcloud container clusters get-credentials ${_CLUSTER_NAME} --zone ${_REGION} --project ${PROJECT_ID}
         
-        # Update images for StatefulSets
-        kubectl set image statefulset/pacs-backend pacs-api=${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-backend:${SHORT_SHA}
-        kubectl set image statefulset/pacs-frontend pacs-ui=${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-ui:${SHORT_SHA}
+        # Update images for StatefulSets using the verified container names
+        kubectl set image statefulset/pacs-backend backend=${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-backend:${SHORT_SHA}
+        kubectl set image statefulset/pacs-frontend frontend=${_REGION_SHORT}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pacs-ui:${SHORT_SHA}
 
-        # Monitor the rollout status for StatefulSets
+        # Monitor the rollout status
         kubectl rollout status statefulset/pacs-backend
         kubectl rollout status statefulset/pacs-frontend
 
